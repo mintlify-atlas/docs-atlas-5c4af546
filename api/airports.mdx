@@ -1,0 +1,227 @@
+---
+title: Airports
+description: Search and retrieve airport information
+---
+
+## Get airports
+
+<CodeGroup>
+```bash cURL
+curl -X GET "https://api.aero.com/v1/airports?search=VIDP" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+```javascript JavaScript
+const response = await fetch('https://api.aero.com/v1/airports?search=VIDP', {
+  headers: {
+    'Authorization': 'Bearer YOUR_JWT_TOKEN'
+  }
+});
+const data = await response.json();
+```
+
+```python Python
+import requests
+
+response = requests.get(
+    'https://api.aero.com/v1/airports',
+    params={'search': 'VIDP'},
+    headers={'Authorization': 'Bearer YOUR_JWT_TOKEN'}
+)
+data = response.json()
+```
+</CodeGroup>
+
+<ParamField path="GET" type="/v1/airports">
+  Get all airports. We do not recommend using this route without any search query. This route has over 20k records.
+</ParamField>
+
+### Query parameters
+
+<ParamField query="search" type="string">
+  Search query for airport. Can be IATA, ICAO (ident), name, or a part of any of these. Searching is case insensitive.
+  
+  **Example:** `VIDP`, `Delhi`, or `Indira Gandhi`
+</ParamField>
+
+### Response
+
+Returns an array of airport objects.
+
+<ResponseField name="id" type="string">
+  Unique airport identifier
+</ResponseField>
+
+<ResponseField name="ident" type="string">
+  Airport ICAO code
+  
+  **Example:** `VIDP`
+</ResponseField>
+
+<ResponseField name="type" type="string">
+  Airport type
+  
+  Values: `small_airport`, `seaplane_base`, `medium_airport`, `large_airport`, `heliport`, `closed`, `balloonport`
+</ResponseField>
+
+<ResponseField name="elevation" type="string">
+  Elevation in feet
+</ResponseField>
+
+<ResponseField name="continent" type="string">
+  Continent code
+  
+  **Example:** `AS` (Asia), `EU` (Europe)
+</ResponseField>
+
+<ResponseField name="isoCountry" type="string">
+  ISO country code
+</ResponseField>
+
+<ResponseField name="isoRegion" type="string">
+  ISO region code
+</ResponseField>
+
+<ResponseField name="municipality" type="string">
+  Municipality/city name
+</ResponseField>
+
+<ResponseField name="gpsCode" type="string">
+  GPS code
+</ResponseField>
+
+<ResponseField name="iataCode" type="string">
+  IATA airport code (nullable for private airports)
+  
+  **Example:** `DEL`
+</ResponseField>
+
+<ResponseField name="name" type="string">
+  Airport name
+  
+  **Example:** `Indira Gandhi International Airport`
+</ResponseField>
+
+<ResponseField name="lat" type="string">
+  Latitude coordinate
+</ResponseField>
+
+<ResponseField name="long" type="string">
+  Longitude coordinate
+</ResponseField>
+
+### Response example
+
+```json
+[
+  {
+    "id": "airport_123",
+    "ident": "VIDP",
+    "type": "large_airport",
+    "elevation": "777",
+    "continent": "AS",
+    "isoCountry": "IN",
+    "isoRegion": "IN-DL",
+    "municipality": "New Delhi",
+    "gpsCode": "VIDP",
+    "iataCode": "DEL",
+    "name": "Indira Gandhi International Airport",
+    "lat": "28.5665",
+    "long": "77.1031"
+  },
+  {
+    "id": "airport_456",
+    "ident": "KJFK",
+    "type": "large_airport",
+    "elevation": "13",
+    "continent": "NA",
+    "isoCountry": "US",
+    "isoRegion": "US-NY",
+    "municipality": "New York",
+    "gpsCode": "KJFK",
+    "iataCode": "JFK",
+    "name": "John F. Kennedy International Airport",
+    "lat": "40.6398",
+    "long": "-73.7789"
+  }
+]
+```
+
+### Error responses
+
+<ResponseField name="500" type="object">
+  Internal server error
+  
+  ```json
+  {
+    "message": "Internal server error"
+  }
+  ```
+</ResponseField>
+
+## Search examples
+
+### Search by IATA code
+
+```bash
+curl -X GET "https://api.aero.com/v1/airports?search=LAX" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+Returns Los Angeles International Airport.
+
+### Search by ICAO code
+
+```bash
+curl -X GET "https://api.aero.com/v1/airports?search=KLAX" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+Returns Los Angeles International Airport.
+
+### Search by name
+
+```bash
+curl -X GET "https://api.aero.com/v1/airports?search=Heathrow" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+Returns London Heathrow Airport and other airports with "Heathrow" in the name.
+
+### Search by city
+
+```bash
+curl -X GET "https://api.aero.com/v1/airports?search=Tokyo" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+Returns all airports in or near Tokyo.
+
+## Airport types
+
+The API includes various types of airports:
+
+<Tabs>
+  <Tab title="Commercial airports">
+    - **large_airport**: Major international airports with significant passenger traffic
+    - **medium_airport**: Regional airports with commercial service
+    - **small_airport**: Smaller airports, often serving general aviation
+  </Tab>
+  
+  <Tab title="Specialized facilities">
+    - **seaplane_base**: Facilities for seaplanes to take off and land on water
+    - **heliport**: Designated areas for helicopter operations
+    - **balloonport**: Launch sites for hot air balloons
+  </Tab>
+  
+  <Tab title="Other">
+    - **closed**: Airports that are no longer operational
+  </Tab>
+</Tabs>
+
+## Best practices
+
+- Always use the `search` parameter when querying airports to avoid retrieving all 20,000+ records
+- Search is case-insensitive, so "JFK", "jfk", and "Jfk" will all return the same results
+- You can search by partial names (e.g., "Kennedy" will return "John F. Kennedy International Airport")
+- For the most accurate results, use IATA or ICAO codes when you know them

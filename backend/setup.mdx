@@ -1,0 +1,189 @@
+---
+title: Backend setup
+description: Set up and install the Aero backend API
+---
+
+The Aero backend is built with NestJS, a progressive Node.js framework for building efficient and scalable server-side applications. It uses PostgreSQL as the database with Prisma as the ORM.
+
+## Prerequisites
+
+Before setting up the backend, ensure you have the following installed:
+
+- Node.js 20 or higher
+- PostgreSQL database
+- pnpm package manager (v9.15.1 or higher)
+
+## Installation
+
+<Steps>
+  <Step title="Clone and navigate to the API directory">
+    Navigate to the backend source directory:
+
+    ```bash
+    cd workspace/source/api
+    ```
+  </Step>
+
+  <Step title="Install dependencies">
+    Install all required packages using pnpm:
+
+    ```bash
+    pnpm install
+    ```
+
+    This will install key dependencies including:
+    - `@nestjs/core` and `@nestjs/common` - NestJS framework
+    - `@prisma/client` - Prisma ORM client
+    - `jsonwebtoken` - JWT authentication
+    - `argon2` - Password hashing
+    - `@liaoliaots/nestjs-redis` - Redis integration
+    - `@nestjs/swagger` - API documentation
+  </Step>
+
+  <Step title="Configure environment variables">
+    Create a `.env` file in the API directory with the required environment variables. See the [Configuration](/backend/configuration) page for details.
+
+    ```bash
+    cp .env.example .env
+    ```
+  </Step>
+
+  <Step title="Set up the database">
+    Generate Prisma client and run database migrations:
+
+    ```bash
+    npx prisma generate
+    npx prisma migrate deploy
+    ```
+
+    For development, you can also use:
+
+    ```bash
+    npx prisma migrate dev
+    ```
+  </Step>
+
+  <Step title="Start the development server">
+    Run the API in development mode with hot reload:
+
+    <CodeGroup>
+      ```bash Development
+      pnpm run dev
+      ```
+
+      ```bash Production
+      pnpm run build
+      pnpm run start:prod
+      ```
+    </CodeGroup>
+
+    The API will be available at `http://localhost:5000`
+  </Step>
+</Steps>
+
+## Project structure
+
+The backend follows NestJS modular architecture:
+
+```
+api/
+├── prisma/
+│   ├── schema.prisma        # Database schema
+│   └── migrations/          # Migration files
+├── src/
+│   ├── resources/           # Feature modules
+│   │   ├── auth/           # Authentication
+│   │   ├── airports/       # Airport data
+│   │   ├── airlines/       # Airline data
+│   │   ├── flights/        # Flight search
+│   │   └── flight/         # Flight tracking
+│   ├── middlewares/        # Global middlewares
+│   ├── decorators/         # Custom decorators
+│   ├── services/           # Shared services
+│   ├── db/                 # Prisma client
+│   ├── app.module.ts       # Root module
+│   └── main.ts             # Application entry point
+└── package.json
+```
+
+## Available scripts
+
+The backend includes several npm scripts for development and production:
+
+<CodeGroup>
+  ```bash Development
+  # Start with watch mode
+  pnpm run dev
+
+  # Start with debug mode
+  pnpm run start:debug
+  ```
+
+  ```bash Building
+  # Build for production
+  pnpm run build
+
+  # Start production server
+  pnpm run start:prod
+  ```
+
+  ```bash Testing
+  # Run unit tests
+  pnpm run test
+
+  # Run tests in watch mode
+  pnpm run test:watch
+
+  # Generate coverage report
+  pnpm run test:cov
+
+  # Run e2e tests
+  pnpm run test:e2e
+  ```
+
+  ```bash Code quality
+  # Lint and fix code
+  pnpm run lint
+
+  # Format code
+  pnpm run format
+  ```
+</CodeGroup>
+
+## Compiler configuration
+
+The backend uses SWC for faster compilation. The compiler is configured in `nest-cli.json`:
+
+```json
+{
+  "compilerOptions": {
+    "builder": {
+      "type": "swc",
+      "options": {
+        "swcrcPath": "./.swcrc"
+      }
+    },
+    "typeCheck": true
+  }
+}
+```
+
+<Note>
+  SWC is significantly faster than the default TypeScript compiler, improving build times during development.
+</Note>
+
+## API documentation
+
+Once the server is running, you can access the interactive API documentation at:
+
+- Scalar API Reference: `http://localhost:5000/docs`
+
+The API uses Swagger/OpenAPI for documentation, with `@scalar/nestjs-api-reference` providing a modern, interactive interface.
+
+## Next steps
+
+After setting up the backend:
+
+1. Configure your [environment variables](/backend/configuration)
+2. Review the [database schema](/backend/database)
+3. Learn about [JWT authentication](/backend/authentication)

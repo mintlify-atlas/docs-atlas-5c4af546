@@ -1,0 +1,352 @@
+---
+title: Web scraper for airline data
+description: Use Playwright to scrape airline information from FlightRadar24
+---
+
+## Overview
+
+The Aero scraper is a Playwright-based tool that extracts airline data from FlightRadar24. It collects airline names, IATA/ICAO codes, and fleet information to populate the database.
+
+<Note>
+  **Use at your own risk.** Web scraping may violate terms of service. Ensure you have permission to scrape data from the target website.
+</Note>
+
+## Architecture
+
+The scraper uses Playwright with Chromium to navigate FlightRadar24 and extract structured airline data:
+
+```
+┌─────────────────────────────────────────┐
+│       Playwright (Chromium)             │
+│  Headless browser automation            │
+└─────────────┬───────────────────────────┘
+              │
+              │ Navigate to page
+              ▼
+┌─────────────────────────────────────────┐
+│    FlightRadar24 Airlines Page          │
+│  https://flightradar24.com/data/airlines│
+└─────────────┬───────────────────────────┘
+              │
+              │ Extract table data
+              ▼
+┌─────────────────────────────────────────┐
+│        data.json output                 │
+│  Structured airline information         │
+└─────────────────────────────────────────┘
+```
+
+## Location
+
+The scraper is located in the `scraper/` directory:
+
+```
+scraper/
+├── index.ts         # Entry point
+├── scraper.ts       # Main scraper logic
+├── package.json     # Dependencies
+├── tsconfig.json    # TypeScript config
+└── bun.lockb        # Lock file
+```
+
+## Prerequisites
+
+The scraper requires:
+
+- **Bun** runtime (v1.1.42 or higher)
+- **Playwright** (automatically installed with dependencies)
+
+## Installation
+
+<Steps>
+  <Step title="Navigate to scraper directory">
+    ```bash
+    cd scraper
+    ```
+  </Step>
+
+  <Step title="Install dependencies">
+    ```bash
+    bun install
+    ```
+
+    This installs:
+    - Playwright (v1.49.1+)
+    - TypeScript types
+  </Step>
+
+  <Step title="Install Playwright browsers">
+    ```bash
+    bunx playwright install chromium
+    ```
+  </Step>
+</Steps>
+
+## Running the scraper
+
+Execute the scraper with a single command:
+
+```bash
+bun run index.ts
+```
+
+The scraper will:
+1. Launch a Chromium browser
+2. Navigate to FlightRadar24 airlines page
+3. Wait for the table to load
+4. Extract airline data from table rows
+5. Save results to `data.json`
+6. Close the browser
+
+<Tip>
+  The scraper runs in non-headless mode by default (`headless: false`), so you can see the browser in action. This is useful for debugging.
+</Tip>
+
+## Implementation details
+
+### Entry point (index.ts)
+
+```typescript
+import { scrapeAirlines } from "./scraper";
+
+await scrapeAirlines().catch(console.error);
+```
+
+### Core scraper logic (scraper.ts)
+
+```typescript
+import { chromium, firefox } from "playwright";
+
+export async function scrapeAirlines() {
+  // Launch browser
+  const browser = await chromium.launch({
+    headless: false, // Set to false for debugging
+    timeout: 0,
+  });
+
+  try {
+    // Create new page
+    const page = await browser.newPage();
+
+    // Navigate to airlines page
+    await page.goto("https://www.flightradar24.com/data/airlines", {
+      waitUntil: "domcontentloaded",
+    });
+
+    // Wait for the table to load
+    await page.waitForSelector("table");
+
+    // Extract airline data
+    const airlines = await page.evaluate(() => {
+      const rows = document.querySelectorAll("table tr");
+      return Array.from(rows)
+        .map((row) => {
+          const cells = row.querySelectorAll("td");
+          if (cells.length < 3) return null;
+
+          // Extract airline info
+          const nameLink = cells[1].querySelector("a");
+          return {
+            name: cells[2]?.textContent?.trim() || "",
+            code: cells[2]?.textContent?.trim() || "",
+            fleet: cells[3]?.textContent?.trim() || "",
+          };
+        })
+        .filter((airline) => airline !== null && airline.fleet.length > 3);
+    });
+
+    // Output results
+    console.log("Found airlines:", airlines.length);
+    Bun.write("data.json", JSON.stringify(airlines, null, 4));
+
+    return airlines;
+  } catch (error) {
+    console.error("Error scraping airlines:", error);
+    throw error;
+  } finally {
+    // Always close browser
+    await browser.close();
+  }
+}
+```
+
+## Configuration options
+
+### Browser settings
+
+You can customize the browser launch options:
+
+```typescript
+const browser = await chromium.launch({
+  headless: true,        // Run without UI
+  timeout: 30000,        // Set timeout in ms
+  slowMo: 100,          // Slow down operations for debugging
+});
+```
+
+### Alternative browsers
+
+The scraper can use Firefox or WebKit:
+
+```typescript
+import { firefox, webkit } from "playwright";
+
+// Use Firefox
+const browser = await firefox.launch({ headless: false });
+
+// Use WebKit
+const browser = await webkit.launch({ headless: false });
+```
+
+## Output format
+
+The scraper outputs data to `data.json` in the following format:
+
+```json
+[
+  {
+    "name": "American Airlines",
+    "code": "American Airlines",
+    "fleet": "AA/AAL"
+  },
+  {
+    "name": "Delta Air Lines",
+    "code": "Delta Air Lines",
+    "fleet": "DL/DAL"
+  },
+  {
+    "name": "United Airlines",
+    "code": "United Airlines",
+    "fleet": "UA/UAL"
+  }
+]
+```
+
+## Using scraped data
+
+After scraping, you can use the [data management scripts](/development/scripts) to import the data into your database:
+
+```bash
+cd ../scripts
+bun run json.ts
+```
+
+This will parse `data.json` and insert the airlines into the database.
+
+## Customizing the scraper
+
+### Scrape additional fields
+
+Modify the `page.evaluate()` function to extract more data:
+
+```typescript
+const airlines = await page.evaluate(() => {
+  const rows = document.querySelectorAll("table tr");
+  return Array.from(rows)
+    .map((row) => {
+      const cells = row.querySelectorAll("td");
+      if (cells.length < 3) return null;
+
+      return {
+        name: cells[2]?.textContent?.trim() || "",
+        code: cells[2]?.textContent?.trim() || "",
+        fleet: cells[3]?.textContent?.trim() || "",
+        country: cells[4]?.textContent?.trim() || "", // Add country
+        founded: cells[5]?.textContent?.trim() || "", // Add founded year
+      };
+    })
+    .filter((airline) => airline !== null);
+});
+```
+
+### Change target URL
+
+To scrape different pages:
+
+```typescript
+await page.goto("https://www.flightradar24.com/data/airports", {
+  waitUntil: "domcontentloaded",
+});
+```
+
+### Add error handling
+
+Enhance error handling with retries:
+
+```typescript
+const maxRetries = 3;
+let attempt = 0;
+
+while (attempt < maxRetries) {
+  try {
+    await page.goto(url, { waitUntil: "domcontentloaded" });
+    break;
+  } catch (error) {
+    attempt++;
+    console.log(`Retry ${attempt}/${maxRetries}`);
+    if (attempt === maxRetries) throw error;
+  }
+}
+```
+
+## Troubleshooting
+
+### Playwright not installed
+
+If you see errors about missing browsers:
+
+```bash
+bunx playwright install
+```
+
+### Timeout errors
+
+Increase the timeout or wait for specific elements:
+
+```typescript
+await page.goto(url, {
+  waitUntil: "networkidle",
+  timeout: 60000, // 60 seconds
+});
+```
+
+### Selector not found
+
+Inspect the page to find the correct selectors:
+
+```typescript
+// Wait for specific selector
+await page.waitForSelector(".airline-table", { timeout: 10000 });
+
+// Take screenshot for debugging
+await page.screenshot({ path: "debug.png" });
+```
+
+### Rate limiting
+
+Add delays between requests to avoid rate limiting:
+
+```typescript
+await page.waitForTimeout(2000); // Wait 2 seconds
+```
+
+## Best practices
+
+1. **Respect robots.txt** - Check the website's robots.txt file
+2. **Add delays** - Don't overwhelm the target server
+3. **Handle errors gracefully** - Implement proper error handling and retries
+4. **Use headless mode in production** - Set `headless: true` for automated runs
+5. **Cache results** - Store scraped data to avoid repeated requests
+6. **Monitor changes** - Website structure may change; update selectors accordingly
+7. **Legal compliance** - Ensure you have permission to scrape the data
+
+## Alternative data sources
+
+Instead of web scraping, consider using official APIs:
+
+- **OpenSky Network** - Free ADS-B flight tracking data
+- **Aviation Stack** - Commercial flight API (used in Aero)
+- **AeroDataBox** - Comprehensive aviation data API
+- **FlightAware** - Official FlightAware API (used in Aero)
+
+These APIs provide reliable, structured data without the fragility of web scraping.

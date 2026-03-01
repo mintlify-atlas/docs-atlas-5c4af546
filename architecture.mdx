@@ -1,0 +1,557 @@
+---
+title: Architecture
+description: Understanding Aero's monorepo structure and system design
+---
+
+## Overview
+
+Aero is organized as a monorepo containing all backend services, client applications, and supporting tools. This architecture enables code sharing, consistent versioning, and streamlined development workflows across the entire platform.
+
+```
+aero/
+├── api/                 # NestJS REST API (core backend)
+├── app/                 # Flutter mobile app (iOS/Android)
+├── wearos/              # Wear OS companion app
+├── landing/             # React marketing website
+├── backend/             # Legacy PocketBase (deprecated)
+├── scraper/             # Web scraping tools (Playwright + Bun)
+├── scripts/             # Data management utilities
+└── openapi/             # Auto-generated Dart API client
+```
+
+## Backend architecture
+
+### Core API (`api/`)
+
+The heart of Aero is a NestJS REST API built with TypeScript, providing all flight tracking functionality.
+
+#### Technology stack
+
+- **Framework**: NestJS 10.4 with TypeScript 5.7
+- **Database**: PostgreSQL with Prisma ORM 6.1
+- **Caching**: Redis via ioredis
+- **Authentication**: JWT with argon2 password hashing
+- **Documentation**: OpenAPI/Swagger + Scalar API Reference
+- **Security**: Helmet middleware for HTTP headers
+- **Logging**: Morgan for HTTP request logging
+
+#### Module structure
+
+The API follows NestJS modular architecture:
+
+```typescript
+api/src/
+├── resources/
+│   ├── auth/              # User authentication (login, register)
+│   ├── profile/           # User profile management
+│   ├── flights/           # Flight search between airports
+│   ├── flight/            # Individual flight tracking
+│   ├── airports/          # Airport information
+│   ├── airlines/          # Airline data
+│   └── alerts/            # Flight alerts (future)
+├── common/                # Shared entities and utilities
+├── decorators/            # Custom decorators (@Auth, etc.)
+├── interceptors/          # Request/response interceptors
+└── main.ts               # Application entry point
+```
+
+<Note>
+  Each module contains its own controller, service, DTOs (Data Transfer Objects), and entities following NestJS best practices.
+</Note>
+
+#### Database schema
+
+The Prisma schema defines comprehensive models for aviation data:
+
+**Core entities**:
+- `User` - User accounts with authentication
+- `Flight` - Tracked flights with real-time data
+- `FlightBooking` - User flight bookings with seat and travel details
+- `FlightPositions` - Individual position data points for flight paths
+- `FlightAwareData` - Extended FlightAware flight information
+
+**Reference data**:
+- `Airport` - Global airport database (IATA/ICAO codes, coordinates, timezone)
+- `Airline` - Airline information with logos
+- `Aircraft` - Aircraft details (registration, type, age, photos)
+- `AircraftRegistration` - Historical registration data
+
+**Supporting models**:
+- `GreatCircleDistance` - Calculated flight distances
+- `Flights` - Flight search results cache
+
+<CodeGroup>
+```prisma User Model
+model User {
+  id       String @id @unique
+  name     String
+  email    String @unique
+  password String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  flights   Flight[]
+  bookings  FlightBooking[]
+}
+```
+
+```prisma Flight Model
+model Flight {
+  id String @id @unique @default(cuid())
+
+  greatCircleDistance GreatCircleDistance?
+  flightAwareData     FlightAwareData?
+
+  flightNo  String
+  aircraft  Json      // Type, registration, image
+  airline   Json      // Name, IATA, ICAO, logo
+  arrival   Json      // Airport details, times, gate
+  departure Json      // Airport details, times, gate
+  cargo     Boolean   @default(false)
+  date      DateTime
+  callSign  String
+
+  FlightPositions           FlightPosition[]
+  allFlightPositionsFetched Boolean @default(false)
+  bookings                  FlightBooking[]
+
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+```
+
+```prisma FlightBooking Model
+model FlightBooking {
+  id String @id @unique @default(cuid())
+
+  bookingCode   String?      // Confirmation code
+  seatNumber    String?      // e.g., "12A"
+  seatType      SeatType?    // window, aisle, middle
+  seatingClass  SeatingClass? // economy, business, first
+  reason        BookingReason? // personal, business, crew
+  notes         String?
+
+  flight   Flight @relation(fields: [flightId])
+  flightId String
+
+  user   User   @relation(fields: [userId])
+  userId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+```
+</CodeGroup>
+
+#### API endpoints
+
+Key endpoint groups:
+
+**Authentication** (`/auth`)
+- `POST /auth/register` - Create new user account
+- `POST /auth/login` - Authenticate and receive JWT
+- `GET /auth/@me` - Get current user details
+
+**Flight tracking** (`/flight`)
+- `GET /flight` - Get detailed flight information
+- `GET /flight/search` - Search for flights by identifier
+- `GET /flight/track` - Get flight path with all position data
+
+**Flight bookings** (`/flight/booking`)
+- `POST /flight/booking` - Create a flight booking
+- `GET /flight/booking/:bookingId` - Get booking details
+- `PUT /flight/booking/:bookingId` - Update booking
+- `DELETE /flight/booking/:bookingId` - Delete booking
+- `GET /flight/booking/flight/:flightId` - Get all bookings for a flight
+
+**Flight search** (`/flights`)
+- `GET /flights` - Search flights between airports by date
+- `POST /flights/airline` - Get airline information
+- `GET /flights/tracked` - Get all tracked flights
+
+**Reference data**
+- `GET /airports` - Search airports
+- `GET /airlines` - Get airline information
+
+#### External API integrations
+
+Aero integrates with multiple flight data providers:
+
+- **FlightAware** - Primary source for real-time flight tracking
+- **AviationStack** - Flight search between airports
+- **AeroDataBox** (via RapidAPI) - Aircraft and additional flight data
+- **OpenSky Network** - Open-source flight tracking data
+
+#### Caching strategy
+
+Redis is used extensively to minimize external API calls and improve performance:
+
+- Flight search results cached by route and date
+- Airport and airline data cached indefinitely
+- Real-time flight positions cached with short TTL (30-60 seconds)
+- User session data stored in Redis
+
+## Client applications
+
+### Flutter mobile app (`app/`)
+
+Cross-platform mobile application for iOS and Android.
+
+#### Features
+
+- **Real-time tracking** - Live flight position on interactive maps
+- **Flight search** - Find flights by number or route
+- **Booking management** - Save and manage flight bookings
+- **Home widgets** - Quick access to tracked flights
+- **Offline support** - Local caching with offline viewing
+- **Dynamic icons** - Customizable app icons
+- **Wear OS sync** - Send flight data to smartwatch
+
+#### Architecture
+
+```dart
+app/lib/
+├── screens/
+│   ├── auth/              # Login and registration
+│   ├── home/              # Main flight tracking interface
+│   ├── profile/           # User profile and settings
+│   └── wearables/         # Wear OS pairing
+├── services/
+│   ├── main.dart          # API service layer
+│   ├── booking_service.dart
+│   ├── profile.dart
+│   └── wear_os.dart       # Wear OS communication
+├── models/                # Data models (Flight, User, Airline)
+├── widgets/               # Reusable UI components
+├── routes/                # Navigation configuration
+└── constants/             # App configuration
+```
+
+#### State management
+
+The app uses Provider for state management:
+
+```dart
+MultiProvider(
+  providers: [
+    ChangeNotifierProvider(
+      create: (context) => UserNotifier(),
+    ),
+  ],
+  child: const MainApp(),
+)
+```
+
+#### API integration
+
+The app uses an auto-generated Dart client from the OpenAPI specification:
+
+```dart
+final openapi = Openapi(
+  dio: Dio(
+    BaseOptions(
+      baseUrl: API_URL,
+    ),
+  ),
+  interceptors: [
+    AuthInterceptor(), // Automatically adds JWT to requests
+  ],
+);
+```
+
+#### Background updates
+
+Workmanager handles periodic widget updates:
+
+```dart
+Workmanager().registerPeriodicTask(
+  'widget-update',
+  'widgetUpdateTask',
+  frequency: const Duration(minutes: 15),
+  constraints: Constraints(
+    networkType: NetworkType.connected,
+  ),
+);
+```
+
+### Wear OS companion (`wearos/`)
+
+Native Wear OS app built with Kotlin and Jetpack Compose.
+
+<Warning>
+  The Wear OS app is currently under active development.
+</Warning>
+
+#### Features
+
+- **Quick access** - View tracked flights at a glance
+- **Watch tiles** - Show flight status on watch face
+- **Complications** - Add flight data to any watch face
+- **Phone sync** - Receive flight updates from the mobile app
+- **Local storage** - Room database for offline access
+
+#### Architecture
+
+```kotlin
+wearos/app/src/main/java/fyi/procrastinator/aero/
+├── presentation/
+│   ├── MainActivity.kt
+│   ├── Navigator.kt
+│   ├── screens/home/      # Main watch UI
+│   └── theme/             # Material Design theme
+├── services/
+│   ├── MessageListenerService.kt  # Receive data from phone
+│   └── MessageSenderService.kt    # Send requests to phone
+├── database/
+│   ├── entity/            # Room entities
+│   └── dao/               # Data access objects
+├── tile/
+│   └── MainTileService.kt # Watch tile implementation
+└── complication/
+    └── MainComplicationService.kt # Watch face complications
+```
+
+#### Data synchronization
+
+The Wear OS app communicates with the mobile app using the Wearable Data Layer API:
+
+```kotlin
+// Listen for flight data from phone
+class MessageListenerService : WearableListenerService() {
+    override fun onMessageReceived(messageEvent: MessageEvent) {
+        when (messageEvent.path) {
+            "/flight-update" -> handleFlightUpdate(messageEvent.data)
+        }
+    }
+}
+```
+
+### Marketing website (`landing/`)
+
+Modern React landing page for Aero.
+
+#### Technology
+
+- **React 19** with TypeScript
+- **Vite** for fast builds
+- **Tailwind CSS** for styling
+- **shadcn/ui** component library
+
+#### Structure
+
+```typescript
+landing/src/
+├── components/
+│   ├── Hero.tsx           # Hero section
+│   ├── BentoFeatures.tsx  # Feature showcase
+│   ├── IconShowcase.tsx   # App icon gallery
+│   ├── Pricing.tsx        # Pricing information
+│   └── ui/                # Reusable UI components
+├── data/
+│   ├── features.tsx       # Feature definitions
+│   └── icons.ts           # Icon metadata
+└── App.tsx               # Main application
+```
+
+## Supporting tools
+
+### Data scraper (`scraper/`)
+
+Web scraping tool for airline data using Playwright and Bun.
+
+```typescript
+// Extract airline logos and information
+import { chromium } from 'playwright';
+
+const browser = await chromium.launch();
+const page = await browser.newPage();
+
+// Scrape airline websites for logos, liveries, etc.
+await page.goto('https://airline-website.com');
+const logo = await page.locator('.airline-logo').getAttribute('src');
+```
+
+### Data scripts (`scripts/`)
+
+Utilities for data management and migrations:
+
+- Import airport data from OpenFlights
+- Bulk airline data processing
+- Database seeding and migrations
+- Data cleanup and normalization
+
+### OpenAPI client (`openapi/`)
+
+Auto-generated Dart API client created from the NestJS OpenAPI specification:
+
+```bash
+# Generate client from OpenAPI spec
+./generate-openapi-client.sh
+```
+
+This ensures type-safe API calls in the Flutter app with automatic updates when the API changes.
+
+## Data flow
+
+Here's how data flows through the system when tracking a flight:
+
+<Steps>
+  <Step title="User searches for flight">
+    Mobile app sends request to `/flight/search` with flight number
+  </Step>
+  
+  <Step title="API checks cache">
+    API checks Redis for recent search results to avoid duplicate external API calls
+  </Step>
+  
+  <Step title="External API query">
+    If not cached, API queries FlightAware for flight information
+  </Step>
+  
+  <Step title="Database storage">
+    Flight data is stored in PostgreSQL with relationships to user, aircraft, and positions
+  </Step>
+  
+  <Step title="Response with positions">
+    API returns flight details including current position and historical path data
+  </Step>
+  
+  <Step title="Real-time updates">
+    Mobile app polls for updates every 30 seconds while flight is active
+  </Step>
+  
+  <Step title="Wear OS sync">
+    If paired, flight data is sent to Wear OS via Wearable Data Layer
+  </Step>
+  
+  <Step title="Widget updates">
+    Background worker updates home screen widget with latest flight status
+  </Step>
+</Steps>
+
+## Deployment
+
+### Backend deployment
+
+The NestJS API can be deployed to any Node.js hosting platform:
+
+```bash
+# Production build
+cd api
+pnpm run build
+
+# Start production server
+pnpm run start:prod
+```
+
+**Requirements**:
+- PostgreSQL database (managed or self-hosted)
+- Redis instance for caching
+- Environment variables for API keys and secrets
+
+### Mobile app deployment
+
+```bash
+# Build Android APK
+cd app
+flutter build apk --release
+
+# Build iOS app (requires macOS)
+flutter build ios --release
+```
+
+<Note>
+  Android native configuration is fully set up. iOS configuration may require additional setup.
+</Note>
+
+### Web deployment
+
+```bash
+# Build landing page
+cd landing
+bun run build
+
+# Deploy to static hosting (Vercel, Netlify, etc.)
+```
+
+## Performance considerations
+
+### Caching strategy
+
+- **Static data** (airports, airlines) cached indefinitely
+- **Flight positions** cached for 30-60 seconds
+- **Search results** cached for 5 minutes
+- **User sessions** stored in Redis with 7-day expiry
+
+### Database optimization
+
+- Indexed fields for fast lookups (flight numbers, airport codes, registration)
+- Composite indexes on frequently queried combinations
+- JSON fields for flexible flight data storage
+- Automatic position data cleanup for landed flights
+
+### API rate limiting
+
+To protect external APIs:
+- Aggressive caching reduces API calls
+- Flight positions only updated when actively viewed
+- Batch requests where possible
+- Graceful degradation when rate limits hit
+
+## Development workflow
+
+### Monorepo advantages
+
+- **Shared types** - API types used directly in mobile app
+- **Version sync** - All components updated together
+- **Code reuse** - Shared utilities and constants
+- **Atomic changes** - API and client updated in single PR
+
+### Code generation
+
+OpenAPI specification automatically generates:
+- Swagger documentation
+- Dart API client for Flutter
+- Type-safe request/response interfaces
+
+```bash
+# After API changes, regenerate client
+./generate-openapi-client.sh
+```
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card
+    title="API reference"
+    icon="book"
+    href="/api-reference/introduction"
+  >
+    Explore all available API endpoints
+  </Card>
+  <Card
+    title="Mobile development"
+    icon="mobile"
+    href="/guides/mobile"
+  >
+    Build features for the Flutter app
+  </Card>
+  <Card
+    title="Database schema"
+    icon="database"
+    href="/guides/database"
+  >
+    Deep dive into the data models
+  </Card>
+  <Card
+    title="Contributing"
+    icon="code-pull-request"
+    href="/contributing"
+  >
+    Learn how to contribute to Aero
+  </Card>
+</CardGroup>

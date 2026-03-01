@@ -1,0 +1,212 @@
+---
+title: Flight alerts
+description: Flight alert endpoints and webhooks
+---
+
+## Overview
+
+The Aero API does not currently expose public endpoints for managing flight alerts. Alert functionality is handled internally by the system and is not documented in the public API specification.
+
+## Future availability
+
+Flight alert endpoints may be added in a future version of the API. These would potentially include:
+
+- Creating flight status alerts
+- Managing alert subscriptions
+- Configuring notification preferences
+- Webhook endpoints for real-time notifications
+
+## Alternative solutions
+
+While dedicated alert endpoints are not available, you can implement similar functionality using the existing API endpoints:
+
+### Polling for flight status changes
+
+```javascript
+// Poll flight status every 5 minutes
+const checkFlightStatus = async (iata, icao, timezone) => {
+  const response = await fetch(
+    `https://api.aero.com/v1/flight?iata=${iata}&icao=${icao}&timezone=${timezone}&forceUpdate=true`,
+    {
+      headers: { 'Authorization': 'Bearer YOUR_JWT_TOKEN' }
+    }
+  );
+  return await response.json();
+};
+
+const monitorFlight = (iata, icao, timezone, callback) => {
+  setInterval(async () => {
+    const flight = await checkFlightStatus(iata, icao, timezone);
+    callback(flight);
+  }, 5 * 60 * 1000); // Check every 5 minutes
+};
+
+// Usage
+monitorFlight('UA123', 'UAL123', 'America/Los_Angeles', (flight) => {
+  console.log('Flight status:', flight.flightAwareData.status);
+  if (flight.flightAwareData.departureDelay > 0) {
+    console.log('Delay detected:', flight.flightAwareData.departureDelay, 'seconds');
+  }
+});
+```
+
+### Tracking flight position changes
+
+```javascript
+const trackFlightPosition = async (iata, icao, timezone) => {
+  let lastPosition = null;
+  
+  const checkPosition = async () => {
+    const response = await fetch(
+      `https://api.aero.com/v1/flight/track?iata=${iata}&icao=${icao}&timezone=${timezone}`,
+      {
+        headers: { 'Authorization': 'Bearer YOUR_JWT_TOKEN' }
+      }
+    );
+    const track = await response.json();
+    
+    if (track.positions && track.positions.length > 0) {
+      const currentPosition = track.positions[track.positions.length - 1];
+      
+      if (lastPosition) {
+        // Check for significant changes
+        if (Math.abs(currentPosition.altitude - lastPosition.altitude) > 50) {
+          console.log('Altitude change detected');
+        }
+        if (currentPosition.altitude_change !== lastPosition.altitude_change) {
+          console.log('Flight phase changed:', currentPosition.altitude_change);
+        }
+      }
+      
+      lastPosition = currentPosition;
+    }
+  };
+  
+  // Check every 30 seconds
+  setInterval(checkPosition, 30000);
+};
+```
+
+### Monitoring tracked flights
+
+```javascript
+const monitorTrackedFlights = async () => {
+  const response = await fetch(
+    'https://api.aero.com/v1/flights/tracked',
+    {
+      headers: { 'Authorization': 'Bearer YOUR_JWT_TOKEN' }
+    }
+  );
+  const data = await response.json();
+  
+  // Check each flight for status updates
+  for (const flight of data.flights) {
+    console.log(`${flight.flightNo}: ${flight.flightAwareData?.status || 'Unknown'}`);
+  }
+};
+
+// Check tracked flights every 10 minutes
+setInterval(monitorTrackedFlights, 10 * 60 * 1000);
+```
+
+## Best practices for polling
+
+If you implement your own alert system using polling:
+
+1. **Respect rate limits**: Don't poll too frequently to avoid hitting API rate limits
+2. **Use forceUpdate wisely**: Only use `forceUpdate=true` when you need the latest data
+3. **Implement exponential backoff**: If you receive errors, increase the time between requests
+4. **Cache results**: Store previous responses to detect changes
+5. **Filter important changes**: Only notify users of significant status changes
+
+## Status changes to monitor
+
+When implementing flight alerts, consider monitoring these key status changes:
+
+- **Status changes**: `scheduled` → `active` → `landed`
+- **Delays**: Changes in `departureDelay` or `arrivalDelay`
+- **Gate changes**: Updates to `gateOrigin` or `gateDestination`
+- **Terminal changes**: Updates to `terminalOrigin` or `terminalDestination`
+- **Time updates**: Changes to `estimatedOut`, `estimatedOff`, `estimatedOn`, `estimatedIn`
+- **Cancellations**: `cancelled` field becomes `true`
+- **Diversions**: `diverted` field becomes `true`
+
+## Example: Complete alert system
+
+```javascript
+class FlightAlertSystem {
+  constructor(authToken) {
+    this.authToken = authToken;
+    this.monitors = new Map();
+  }
+  
+  async addFlightAlert(iata, icao, timezone, callbacks) {
+    const key = `${iata}-${icao}`;
+    
+    const monitor = setInterval(async () => {
+      try {
+        const response = await fetch(
+          `https://api.aero.com/v1/flight?iata=${iata}&icao=${icao}&timezone=${timezone}&forceUpdate=true`,
+          {
+            headers: { 'Authorization': `Bearer ${this.authToken}` }
+          }
+        );
+        const flight = await response.json();
+        
+        // Check for status changes
+        if (callbacks.onStatusChange) {
+          callbacks.onStatusChange(flight.flightAwareData.status);
+        }
+        
+        // Check for delays
+        if (callbacks.onDelay && flight.flightAwareData.departureDelay > 0) {
+          callbacks.onDelay(flight.flightAwareData.departureDelay);
+        }
+        
+        // Check for gate changes
+        if (callbacks.onGateChange && flight.flightAwareData.gateOrigin) {
+          callbacks.onGateChange(flight.flightAwareData.gateOrigin);
+        }
+        
+      } catch (error) {
+        console.error('Error monitoring flight:', error);
+      }
+    }, 5 * 60 * 1000); // 5 minutes
+    
+    this.monitors.set(key, monitor);
+  }
+  
+  removeFlightAlert(iata, icao) {
+    const key = `${iata}-${icao}`;
+    const monitor = this.monitors.get(key);
+    if (monitor) {
+      clearInterval(monitor);
+      this.monitors.delete(key);
+    }
+  }
+  
+  removeAllAlerts() {
+    this.monitors.forEach(monitor => clearInterval(monitor));
+    this.monitors.clear();
+  }
+}
+
+// Usage
+const alertSystem = new FlightAlertSystem('YOUR_JWT_TOKEN');
+
+alertSystem.addFlightAlert('UA123', 'UAL123', 'America/Los_Angeles', {
+  onStatusChange: (status) => {
+    console.log('Flight status changed to:', status);
+  },
+  onDelay: (delaySeconds) => {
+    console.log('Flight delayed by', Math.round(delaySeconds / 60), 'minutes');
+  },
+  onGateChange: (gate) => {
+    console.log('Gate changed to:', gate);
+  }
+});
+```
+
+## Contact support
+
+If you need real-time flight alerts or webhook functionality, please contact Aero API support to discuss enterprise solutions or upcoming features.

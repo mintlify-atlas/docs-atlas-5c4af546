@@ -1,0 +1,421 @@
+---
+title: Customization
+description: Customize your Aero app with alternative icons and personalized settings
+---
+
+Personalize your Aero mobile app experience with custom app icons, themes, and settings.
+
+## App icon customization
+
+Aero for Android includes 12 different app icon designs you can choose from. Each icon maintains the Aero brand while offering unique visual styles.
+
+<Note>
+App icon customization is currently **Android-only**. iOS support coming soon.
+</Note>
+
+### Available icons
+
+Choose from 12 unique icon designs:
+
+1. **Default** (Icon 1) - Classic Aero logo
+2. **Icon 2** - Alternative color scheme
+3. **Icon 3** - Minimalist design  
+4. **Icon 4** - Gradient variant
+5. **Icon 5** - Dark theme
+6. **Icon 6** - Light theme
+7. **Icon 7** - Circular badge
+8. **Icon 8** - Square badge
+9. **Icon 9** - Rounded corners
+10. **Icon 10** - Modern flat
+11. **Icon 11** - Classic aviation
+12. **Icon 12** - Premium gold
+
+All icons are stored in `assets/logos/` and defined in the app manifest as activity aliases.
+
+### Changing your app icon
+
+Customize your app icon from the Profile screen:
+
+<Steps>
+  <Step title="Open Profile">
+    Tap the Profile tab in the bottom navigation bar.
+  </Step>
+  <Step title="Select App Icon">
+    Tap "App Icon" in the profile menu to open the icon selector.
+  </Step>
+  <Step title="Choose an icon">
+    Browse the grid of 12 available icons. Your current icon is highlighted with a checkmark.
+  </Step>
+  <Step title="Apply">
+    Tap any icon to apply it. The app will show a loading indicator while changing the icon.
+  </Step>
+  <Step title="Confirm">
+    A success message appears when the icon is changed. Return to your home screen to see the new icon.
+  </Step>
+</Steps>
+
+### How icon switching works
+
+The app uses Android's activity-alias system to switch icons without reinstalling:
+
+```xml
+<!-- AndroidManifest.xml -->
+<activity-alias
+    android:name="fyi.procrastinator.aero.DEFAULT"
+    android:enabled="true"
+    android:exported="true"
+    android:icon="@mipmap/ic_launcher"
+    android:label="Aero"
+    android:targetActivity=".MainActivity">
+    <intent-filter>
+        <action android:name="android.intent.action.MAIN" />
+        <category android:name="android.intent.category.LAUNCHER" />
+    </intent-filter>
+</activity-alias>
+```
+
+Each icon variant has its own activity-alias. When you select a new icon:
+
+1. The app disables the current alias
+2. Enables the new alias with the selected icon
+3. Saves your selection to SharedPreferences
+4. Shows a confirmation message
+
+The implementation is in `lib/screens/profile/app_icon/main.dart`:
+
+```dart
+Future<void> _changeIcon(String iconId) async {
+  final iconName = iconId == 'DEFAULT' ? "DEFAULT" : iconId;
+  if (await FlutterDynamicIconPlus.supportsAlternateIcons) {
+    final channel = MethodChannel(METHOD_CHANNEL);
+    await channel.invokeMethod("changeAppIcon", {'iconId': iconName});
+  }
+  
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setString('selected_app_icon', iconId);
+}
+```
+
+### Icon persistence
+
+Your icon selection is saved to SharedPreferences and persists across:
+- App restarts
+- Device reboots  
+- App updates
+
+The selected icon is restored when the app launches.
+
+### Platform support
+
+| Platform | Supported | Package Used |
+|----------|-----------|-------------|
+| Android | ✅ Yes | `flutter_dynamic_icon_plus` |
+| iOS | ❌ Coming soon | Planned |
+
+iOS support requires additional entitlements and will be added in a future update.
+
+## Theme customization
+
+Aero currently uses a light theme with clean, minimal design.
+
+### Current theme
+
+The app theme is defined in `lib/main.dart`:
+
+- **Primary color**: Black (#000000)
+- **Background**: White (#FFFFFF)  
+- **Accent**: Blue (#2196F3)
+- **Font**: Geist for body text, CalSans for headings
+- **Navigation bar**: Light gray (#FAFAFA)
+- **Material Design**: Material 3
+
+### Typography
+
+Two custom fonts are included:
+
+**Geist** (body text):
+- Clean, modern sans-serif
+- Used for all body text, labels, and descriptions
+- Loaded from `assets/fonts/geist.ttf`
+
+**CalSans** (headings):
+- Bold, geometric display font  
+- Used for titles, headers, and emphasis
+- Weight: 600 (semi-bold)
+- Loaded from `assets/fonts/calsans.ttf`
+
+Fonts are defined in `pubspec.yaml`:
+
+```yaml
+fonts:
+  - family: Geist
+    fonts:
+      - asset: assets/fonts/geist.ttf
+  - family: CalSans
+    fonts:
+      - asset: assets/fonts/calsans.ttf
+        weight: 600
+```
+
+### Color scheme
+
+The app uses a consistent color palette:
+
+- **Primary**: Black for high contrast
+- **Secondary**: Blue accents for interactive elements
+- **Success**: Green for early flights and confirmations
+- **Warning**: Orange for diverted flights
+- **Error**: Red for delays and errors  
+- **Surface**: Light gray for cards and elevated surfaces
+- **Background**: Pure white
+
+Text colors:
+- **Primary text**: Black (#000000)
+- **Secondary text**: Gray (#757575) - defined in `lib/constants/main.dart`
+- **Disabled**: Light gray (#BDBDBD)
+
+### Dark mode
+
+<Warning>
+Dark mode is not yet implemented but is planned for a future release.
+</Warning>
+
+When dark mode is added, it will include:
+- OLED black backgrounds
+- Muted accent colors  
+- Reduced eye strain at night
+- Automatic switching based on system settings
+
+## Profile settings
+
+Customize your profile and app behavior from the Profile screen.
+
+### Access profile settings
+
+1. Tap the Profile tab in bottom navigation
+2. View your profile information:
+   - Avatar (generated from your name)
+   - Display name
+   - Email address
+
+### Available settings
+
+<CardGroup cols={2}>
+  <Card title="Flight Stats" icon="chart-line">
+    View your lifetime aviation statistics and records
+  </Card>
+  <Card title="Wear OS Devices" icon="watch">
+    Manage connected Wear OS smartwatches
+  </Card>
+  <Card title="App Icon" icon="image">
+    Choose from 12 different app icon designs
+  </Card>
+  <Card title="Log Out" icon="right-from-bracket">
+    Sign out of your account
+  </Card>
+</CardGroup>
+
+### Profile avatar
+
+Your profile displays a generated avatar based on your name:
+
+```dart
+CircleAvatar(
+  radius: 50,
+  backgroundColor: Colors.grey.shade200,
+  backgroundImage: CachedNetworkImageProvider(
+    "https://api.dicebear.com/9.x/initials/png?seed=${user?.name}",
+  ),
+)
+```
+
+The avatar uses [DiceBear](https://dicebear.com) to generate initials-based images. No custom avatar upload yet.
+
+## Notification settings
+
+<Note>
+Push notifications are planned for a future release.
+</Note>
+
+Planned notification types:
+- **Flight status changes**: Delays, gate changes, cancellations
+- **Departure reminders**: Notifications before flight departure  
+- **Boarding alerts**: When boarding begins
+- **Gate changes**: Real-time gate updates
+- **Baggage claim**: When baggage is ready
+
+Notifications will be configurable per-flight and globally.
+
+## Data and privacy settings
+
+### Account management
+
+From the Profile screen:
+
+**Log Out**: Sign out of your account. This:
+- Clears your authentication token
+- Removes locally cached flight data
+- Redirects to the login screen  
+- Keeps widgets active until they expire
+
+**Account deletion** (coming soon):
+- Delete your account and all associated data
+- Removes flight history, bookings, and statistics
+- Cannot be undone
+
+### Data storage
+
+The app stores data locally in:
+
+**SQLite database** (`sqflite`):
+- Tracked flights
+- Flight search history  
+- Cached flight information
+- User preferences
+
+**SharedPreferences**:
+- Selected app icon
+- Authentication tokens
+- Widget data
+- App settings
+
+**Cache directory** (`path_provider`):
+- Airline logos (via `cached_network_image`)
+- Map tiles (via `flutter_map`)
+- Generated flight cards
+
+### Clear cache
+
+<Warning>
+Manual cache clearing is not yet available in the UI.
+</Warning>
+
+To clear the cache:
+1. Go to Android Settings → Apps → Aero → Storage
+2. Tap "Clear cache" (keeps your data)
+3. Or "Clear data" (resets the app completely)
+
+## Language and region
+
+The app currently supports:
+
+- **Language**: English (en_US)
+- **Time format**: Respects device 12/24-hour preference
+- **Date format**: Local device format
+- **Units**: Displays both metric (km) and imperial (mi) for distances
+
+Additional languages planned:
+- Spanish (es)
+- French (fr)  
+- German (de)
+- Japanese (ja)
+- Chinese Simplified (zh_CN)
+
+## Accessibility settings
+
+<Note>
+Accessibility features are limited in the current version.
+</Note>
+
+The app supports:
+- **System font scaling**: Text respects Android font size settings
+- **Screen readers**: Basic TalkBack support
+- **High contrast**: Light theme provides good contrast ratios
+
+Planned improvements:
+- Enhanced screen reader labels
+- Larger touch targets option  
+- Reduced motion mode
+- Voice commands
+
+## Advanced settings
+
+### API configuration
+
+For self-hosted deployments, you can change the backend URL by editing `lib/constants/main.dart`:
+
+```dart
+const String API_BASE_URL = 'https://your-backend.com';
+```
+
+Then rebuild the app:
+
+```bash
+flutter clean
+flutter pub get  
+flutter build apk --release
+```
+
+### Debug mode
+
+Enable debug features by building in debug mode:
+
+```bash
+flutter run --debug
+```
+
+Debug mode enables:
+- Performance overlay
+- Widget inspector
+- Console logging  
+- Network traffic logging
+
+### Widget update frequency
+
+The default widget update interval is 15 minutes. To change it, edit `lib/main.dart`:
+
+```dart
+await Workmanager().registerPeriodicTask(
+  'widget-update',
+  'widgetUpdateTask',
+  frequency: const Duration(minutes: 15), // Change this
+  constraints: Constraints(
+    networkType: NetworkType.connected,
+  ),
+);
+```
+
+<Warning>
+Shorter intervals increase battery usage and API calls. Android enforces a minimum of 15 minutes.
+</Warning>
+
+## Resetting the app
+
+To completely reset Aero:
+
+<Steps>
+  <Step title="Log out">
+    Tap Profile → Log Out to sign out.
+  </Step>
+  <Step title="Clear app data">
+    Go to Android Settings → Apps → Aero → Storage → Clear data.
+  </Step>
+  <Step title="Restart app">
+    Open Aero and log in again or create a new account.
+  </Step>
+</Steps>
+
+This removes:
+- Authentication tokens
+- Cached flights and statistics  
+- Selected app icon (reverts to default)
+- Widget data
+- All local preferences
+
+Your account data on the server remains intact.
+
+## Upcoming customization features
+
+Planned for future releases:
+
+- **Dark mode**: OLED black theme with auto-switching
+- **Custom color themes**: Choose accent colors
+- **Widget themes**: Light and dark widget variants  
+- **Custom fonts**: Select from multiple font options
+- **Home screen layouts**: Compact or detailed views
+- **Gesture customization**: Configure swipe actions
+- **Sound effects**: Optional UI sounds
+
+Stay tuned for updates!
+
+See the [Features](/mobile/features) documentation for core app functionality.

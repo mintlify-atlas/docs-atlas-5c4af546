@@ -1,0 +1,248 @@
+---
+title: Airlines
+description: Search and retrieve airline information
+---
+
+## Get airlines
+
+<CodeGroup>
+```bash cURL
+curl -X GET "https://api.aero.com/v1/airlines?search=United" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+```javascript JavaScript
+const response = await fetch('https://api.aero.com/v1/airlines?search=United', {
+  headers: {
+    'Authorization': 'Bearer YOUR_JWT_TOKEN'
+  }
+});
+const data = await response.json();
+```
+
+```python Python
+import requests
+
+response = requests.get(
+    'https://api.aero.com/v1/airlines',
+    params={'search': 'United'},
+    headers={'Authorization': 'Bearer YOUR_JWT_TOKEN'}
+)
+data = response.json()
+```
+</CodeGroup>
+
+<ParamField path="GET" type="/v1/airlines">
+  Get airlines. Has over 800 records, only has commercial airlines.
+</ParamField>
+
+### Query parameters
+
+<ParamField query="search" type="string">
+  The full (or a part of) name, IATA code, or ICAO code. Case insensitive.
+  
+  **Examples:** `United`, `UA`, `UAL`, or `American`
+</ParamField>
+
+### Response
+
+Returns an array of airline objects.
+
+<ResponseField name="id" type="string">
+  Unique airline identifier
+</ResponseField>
+
+<ResponseField name="name" type="string">
+  Airline name
+  
+  **Example:** `United Airlines`
+</ResponseField>
+
+<ResponseField name="icao" type="string">
+  ICAO airline code (3 letters)
+  
+  **Example:** `UAL`
+</ResponseField>
+
+<ResponseField name="iata" type="string">
+  IATA airline code (2 letters)
+  
+  **Example:** `UA`
+</ResponseField>
+
+<ResponseField name="image" type="string">
+  Airline logo image URL
+  
+  **Example:** `https://cdn.aero.com/airlines/UA.png`
+</ResponseField>
+
+### Response example
+
+```json
+[
+  {
+    "id": "airline_123",
+    "name": "United Airlines",
+    "icao": "UAL",
+    "iata": "UA",
+    "image": "https://cdn.aero.com/airlines/UA.png"
+  },
+  {
+    "id": "airline_456",
+    "name": "United Parcel Service",
+    "icao": "UPS",
+    "iata": "5X",
+    "image": "https://cdn.aero.com/airlines/5X.png"
+  }
+]
+```
+
+### Error responses
+
+<ResponseField name="500" type="object">
+  Internal server error
+  
+  ```json
+  {
+    "message": "Internal server error"
+  }
+  ```
+</ResponseField>
+
+## Search examples
+
+### Search by airline name
+
+```bash
+curl -X GET "https://api.aero.com/v1/airlines?search=Delta" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+Returns Delta Air Lines and any other airlines with "Delta" in the name.
+
+### Search by IATA code
+
+```bash
+curl -X GET "https://api.aero.com/v1/airlines?search=AA" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+Returns American Airlines.
+
+### Search by ICAO code
+
+```bash
+curl -X GET "https://api.aero.com/v1/airlines?search=AAL" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+Returns American Airlines.
+
+### Search by partial name
+
+```bash
+curl -X GET "https://api.aero.com/v1/airlines?search=South" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+Returns Southwest Airlines, South African Airways, and other airlines with "South" in the name.
+
+## Major airline codes
+
+Here are some common airline codes for reference:
+
+<Tabs>
+  <Tab title="US airlines">
+    | Airline | IATA | ICAO |
+    |---------|------|------|
+    | American Airlines | AA | AAL |
+    | Delta Air Lines | DL | DAL |
+    | United Airlines | UA | UAL |
+    | Southwest Airlines | WN | SWA |
+    | JetBlue Airways | B6 | JBU |
+    | Alaska Airlines | AS | ASA |
+  </Tab>
+  
+  <Tab title="European airlines">
+    | Airline | IATA | ICAO |
+    |---------|------|------|
+    | British Airways | BA | BAW |
+    | Lufthansa | LH | DLH |
+    | Air France | AF | AFR |
+    | KLM | KL | KLM |
+    | Ryanair | FR | RYR |
+    | EasyJet | U2 | EZY |
+  </Tab>
+  
+  <Tab title="Asian airlines">
+    | Airline | IATA | ICAO |
+    |---------|------|------|
+    | Emirates | EK | UAE |
+    | Singapore Airlines | SQ | SIA |
+    | Cathay Pacific | CX | CPA |
+    | ANA | NH | ANA |
+    | Japan Airlines | JL | JAL |
+    | Air India | AI | AIC |
+  </Tab>
+  
+  <Tab title="Middle Eastern airlines">
+    | Airline | IATA | ICAO |
+    |---------|------|------|
+    | Emirates | EK | UAE |
+    | Qatar Airways | QR | QTR |
+    | Etihad Airways | EY | ETD |
+    | Saudia | SV | SVA |
+    | Turkish Airlines | TK | THY |
+  </Tab>
+</Tabs>
+
+## Best practices
+
+- Use the `search` parameter to filter airlines and avoid retrieving all 800+ records
+- Search is case-insensitive, so "united", "UNITED", and "United" will all return the same results
+- You can search by partial names (e.g., "Air" will return all airlines with "Air" in the name)
+- For the most accurate results, use IATA or ICAO codes when you know them
+- The `image` field may not be available for all airlines
+
+## Use cases
+
+### Airline autocomplete
+
+Use this endpoint to power an autocomplete search for airline selection:
+
+```javascript
+const searchAirlines = async (query) => {
+  const response = await fetch(
+    `https://api.aero.com/v1/airlines?search=${encodeURIComponent(query)}`,
+    {
+      headers: { 'Authorization': 'Bearer YOUR_JWT_TOKEN' }
+    }
+  );
+  return await response.json();
+};
+
+// User types "amer"
+const results = await searchAirlines('amer');
+// Returns: American Airlines, US Airways, etc.
+```
+
+### Display airline information
+
+Retrieve and display airline details including logo:
+
+```javascript
+const getAirlineByCode = async (iataCode) => {
+  const response = await fetch(
+    `https://api.aero.com/v1/airlines?search=${iataCode}`,
+    {
+      headers: { 'Authorization': 'Bearer YOUR_JWT_TOKEN' }
+    }
+  );
+  const airlines = await response.json();
+  return airlines.find(a => a.iata === iataCode);
+};
+
+const airline = await getAirlineByCode('UA');
+console.log(airline.name); // "United Airlines"
+console.log(airline.image); // Logo URL
+```

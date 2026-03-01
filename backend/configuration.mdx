@@ -1,0 +1,272 @@
+---
+title: Configuration
+description: Environment variables and configuration options for the Aero backend
+---
+
+The Aero backend uses environment variables for configuration. All configuration is managed through a `.env` file in the API root directory.
+
+## Environment variables
+
+Create a `.env` file based on `.env.example` with the following variables:
+
+### Database
+
+<ParamField path="DATABASE_URL" type="string" required>
+  PostgreSQL connection string for the database.
+
+  ```bash
+  DATABASE_URL="postgresql://user:password@localhost:5432/aero?schema=public"
+  ```
+
+  <Note>
+    The connection string follows the format:
+    `postgresql://USER:PASSWORD@HOST:PORT/DATABASE?schema=SCHEMA`
+  </Note>
+</ParamField>
+
+### Authentication
+
+<ParamField path="JWT_SECRET" type="string" required>
+  Secret key used for signing and verifying JWT tokens.
+
+  ```bash
+  JWT_SECRET="your-secret-key-here"
+  ```
+
+  <Warning>
+    Use a strong, random secret in production. Never commit this value to version control.
+  </Warning>
+</ParamField>
+
+### External APIs
+
+The backend integrates with several aviation data providers:
+
+<ParamField path="AVIATION_STACK_API_KEY" type="string" required>
+  API key for Aviation Stack, used to fetch flights between two airports for a given date.
+
+  ```bash
+  AVIATION_STACK_API_KEY="your-aviation-stack-key"
+  ```
+
+  Get your API key at [Aviation Stack](https://aviationstack.com/)
+</ParamField>
+
+<ParamField path="RAPID_API_KEY" type="string" required>
+  API key for RapidAPI's AeroDataBox service, used for detailed flight and aircraft information.
+
+  ```bash
+  RAPID_API_KEY="your-rapidapi-key"
+  ```
+
+  Subscribe to AeroDataBox on [RapidAPI](https://rapidapi.com/) to get your API key.
+</ParamField>
+
+<ParamField path="FLIGHTAWARE_API_KEY" type="string" required>
+  API key for FlightAware, used for real-time flight tracking and position data.
+
+  ```bash
+  FLIGHTAWARE_API_KEY="your-flightaware-key"
+  ```
+
+  Register at [FlightAware](https://flightaware.com/commercial/aeroapi/) to get your API key.
+</ParamField>
+
+### Server
+
+<ParamField path="PORT" type="number" default="5000">
+  Port number for the API server.
+
+  ```bash
+  PORT=5000
+  ```
+
+  If not specified, defaults to port 5000.
+</ParamField>
+
+## NestJS configuration
+
+The backend uses `@nestjs/config` for configuration management. Configuration is loaded globally in `app.module.ts`:
+
+```typescript src/app.module.ts
+import { ConfigModule } from '@nestjs/config';
+
+@Module({
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    // ... other modules
+  ],
+})
+export class AppModule {}
+```
+
+### Accessing configuration
+
+Inject `ConfigService` to access environment variables in your services:
+
+```typescript
+import { ConfigService } from '@nestjs/config';
+import { Injectable } from '@nestjs/common';
+
+@Injectable()
+export class AuthService {
+  constructor(private config: ConfigService) {}
+
+  async generateToken(userId: string) {
+    const secret = this.config.get('JWT_SECRET');
+    // Use the secret to sign tokens
+  }
+}
+```
+
+## CORS configuration
+
+CORS is enabled globally in `main.ts` to allow cross-origin requests:
+
+```typescript src/main.ts
+app.enableCors();
+```
+
+This allows the frontend application to communicate with the API from any origin.
+
+## Validation
+
+Global validation is configured using `class-validator` and `class-transformer`:
+
+```typescript src/main.ts
+app.useGlobalPipes(
+  new ValidationPipe({
+    whitelist: true,
+    enableDebugMessages: true,
+    transform: true,
+    transformOptions: {
+      enableImplicitConversion: true,
+    },
+  }),
+);
+```
+
+### Validation options
+
+- **whitelist**: Strip properties that don't have decorators
+- **transform**: Automatically transform payloads to DTO instances
+- **enableImplicitConversion**: Automatically convert types based on TypeScript metadata
+
+## API versioning
+
+The API uses URI versioning with a default version of `v1`:
+
+```typescript src/main.ts
+app.enableVersioning({
+  type: VersioningType.URI,
+  defaultVersion: '1',
+});
+```
+
+All endpoints are prefixed with `/v1/` by default.
+
+## Logging
+
+The backend uses Morgan for HTTP request logging in development mode:
+
+```typescript src/main.ts
+import morgan from 'morgan';
+
+app.use(morgan('dev'));
+```
+
+This logs all incoming HTTP requests with method, URL, status code, and response time.
+
+## Prisma configuration
+
+Prisma is configured with enhanced error formatting and logging:
+
+```typescript src/db/index.ts
+import { PrismaClient } from '@prisma/client';
+
+export const prisma = new PrismaClient({
+  errorFormat: 'pretty',
+  log: ['error', 'info', 'warn'],
+});
+```
+
+### Preview features
+
+The Prisma schema enables these preview features:
+
+```prisma prisma/schema.prisma
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextSearchPostgres", "omitApi"]
+}
+```
+
+- **fullTextSearchPostgres**: Enables PostgreSQL full-text search
+- **omitApi**: Allows omitting fields when querying
+
+## Security
+
+### Helmet
+
+The backend includes Helmet for security headers:
+
+```typescript
+import helmet from 'helmet';
+
+app.use(helmet());
+```
+
+### Password hashing
+
+Passwords are hashed using Argon2, a secure password hashing algorithm:
+
+```typescript
+import { hash, verify } from 'argon2';
+
+// Hash password
+const hashedPassword = await hash(password);
+
+// Verify password
+const isValid = await verify(hashedPassword, password);
+```
+
+<Warning>
+  Never store plain-text passwords. Always use Argon2 or similar secure hashing algorithms.
+</Warning>
+
+## Static file serving
+
+The backend serves static files from the `web` directory:
+
+```typescript src/app.module.ts
+ServeStaticModule.forRoot({
+  rootPath: join(__dirname, '..', 'web'),
+  exclude: ['/v*', '/docs*', '/alerts*', '/.well-known*'],
+})
+```
+
+This allows the API to serve the frontend application alongside the API endpoints.
+
+## Example .env file
+
+Here's a complete example of a `.env` file:
+
+```bash .env
+# Database
+DATABASE_URL="postgresql://aero:password@localhost:5432/aero?schema=public"
+
+# Authentication
+JWT_SECRET="your-secure-random-secret-key"
+
+# External APIs
+AVIATION_STACK_API_KEY="your-aviation-stack-api-key"
+RAPID_API_KEY="your-rapidapi-key"
+FLIGHTAWARE_API_KEY="your-flightaware-api-key"
+
+# Server (optional)
+PORT=5000
+```
+
+<Note>
+  Replace all placeholder values with your actual credentials before running the application.
+</Note>

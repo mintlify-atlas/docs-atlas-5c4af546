@@ -1,0 +1,117 @@
+---
+title: Mobile app overview
+description: Track flights in real-time with the Aero mobile app for iOS and Android
+---
+
+The Aero mobile app brings powerful flight tracking capabilities to your smartphone. Built with Flutter, the app provides real-time flight tracking, interactive maps, home screen widgets, and seamless synchronization with Wear OS devices.
+
+## Platform support
+
+Aero is available for both iOS and Android devices:
+
+<CardGroup cols={2}>
+  <Card title="Android" icon="android">
+    Android 6.0 (API 23) and higher
+  </Card>
+  <Card title="iOS" icon="apple">
+    iOS 12.0 and higher
+  </Card>
+</CardGroup>
+
+## Key capabilities
+
+### Real-time flight tracking
+
+Track any commercial flight worldwide with live updates every 15 minutes. The app displays:
+
+- Current aircraft position on an interactive map
+- Live altitude, speed, and heading information
+- Departure and arrival times with delay indicators
+- Terminal, gate, and baggage claim information
+- Flight route visualization with waypoints
+
+### Interactive map view
+
+The home screen features a full-screen map powered by Flutter Map, showing:
+
+- Aircraft position with rotation based on heading
+- Flight path from departure to arrival
+- Historical flight track when available
+- Airport markers for origin and destination
+- Smooth animations when switching between flights
+
+### Flight search
+
+Search for flights using multiple methods:
+
+- **Flight number**: Search by airline code and number (e.g., AA100, 6E1045)
+- **Route**: Search by departure and arrival airports
+- **Airline**: Browse flights by specific carriers
+- **Date selection**: View flights across different dates
+
+### Personal flight statistics
+
+Track your aviation history with comprehensive stats:
+
+- Total flights, distance, and flight time
+- Most flown airlines and airports
+- Aircraft statistics (youngest, oldest, most common)
+- Flight records (shortest, longest)
+- Distance comparisons (Earth, Moon, Mars)
+
+### Home screen widgets
+
+Add live flight information to your home screen with Android widgets that update automatically every 15 minutes. See [Widgets](/mobile/widgets) for details.
+
+### Wear OS integration
+
+Connect your Wear OS smartwatch to view flight information on your wrist. The app automatically syncs flight data to connected devices.
+
+### Shareable flight cards
+
+Generate beautiful flight cards with:
+
+- Airline branding and logos
+- Route and timing information
+- Aircraft details and registration
+- Delay/early indicators
+- Share via any app or save as image
+
+## Technology stack
+
+The Aero mobile app is built with:
+
+- **Flutter 3.6+**: Cross-platform UI framework
+- **Dart**: Programming language
+- **go_router**: Declarative routing
+- **flutter_map**: Interactive OpenStreetMap integration
+- **dio**: HTTP client for API communication
+- **sqflite**: Local database for caching
+- **home_widget**: Android home screen widgets
+- **workmanager**: Background tasks for widget updates
+- **provider**: State management
+
+See the [Installation](/mobile/installation) guide to get started.
+
+## Data synchronization
+
+The app synchronizes data with the Aero backend:
+
+- Flight information cached locally in SQLite
+- Automatic refresh every 15 minutes for tracked flights
+- Force refresh available via pull-down gesture
+- Offline access to recently viewed flights
+
+## Privacy and permissions
+
+The app requires the following permissions:
+
+<Note>
+**Internet**: Required for fetching flight data and maps
+
+**Bluetooth**: Optional, for Wear OS device communication
+
+**Location**: Optional, for finding nearby airports
+</Note>
+
+No location data is sent to servers. All flight tracking uses publicly available ADS-B data.

@@ -1,0 +1,334 @@
+---
+title: Widgets
+description: Android home screen widgets for live flight tracking
+---
+
+Aero provides Android home screen widgets that display live flight information and update automatically in the background.
+
+<Note>
+iOS widgets are not yet supported. This documentation covers Android widgets only.
+</Note>
+
+## Current flight widget
+
+The current flight widget displays real-time information about your active flight directly on your home screen.
+
+### Widget features
+
+<CardGroup cols={2}>
+  <Card title="Auto-updates" icon="rotate">
+    Refreshes every 15 minutes while flight is active
+  </Card>
+  <Card title="Live status" icon="signal">
+    Shows delays, early departures, and on-time status
+  </Card>
+  <Card title="Flight details" icon="plane">
+    Displays times, airports, gates, and terminals
+  </Card>
+  <Card title="Smart expiry" icon="clock">
+    Automatically clears 1 hour after landing
+  </Card>
+</CardGroup>
+
+## Adding a widget
+
+Add the current flight widget to your home screen:
+
+<Steps>
+  <Step title="Long-press home screen">
+    Long-press an empty area on your Android home screen to enter widget mode.
+  </Step>
+  <Step title="Open widget picker">
+    Tap "Widgets" to open the widget selection screen.
+  </Step>
+  <Step title="Find Aero">
+    Scroll through the widget list to find "Aero". You'll see the "Current Flight" widget option.
+  </Step>
+  <Step title="Add to home screen">
+    Long-press the "Current Flight" widget and drag it to your desired location on the home screen.
+  </Step>
+  <Step title="Track a flight">
+    Open the Aero app and search for any flight. When you view a flight, it automatically syncs to the widget.
+  </Step>
+</Steps>
+
+The widget will display a placeholder message until you track a flight in the app.
+
+## Widget information
+
+### Displayed data
+
+When a flight is active, the widget shows:
+
+- **Airline logo**: SVG or PNG logo from the airline database
+- **Flight number**: Both IATA (e.g., 6E1045) and ICAO formats
+- **Destination**: Arrival airport name
+- **Airport codes**: Departure and arrival IATA codes (e.g., DEL → BOM)
+- **Departure time**: Local time at departure airport
+- **Arrival time**: Local time at arrival airport  
+- **Status indicators**:
+  - Delay badges (red) when >5 minutes late
+  - Early badges (green) when >5 minutes early
+  - Separate indicators for departure and arrival
+
+### Widget layout
+
+The widget is defined in `android/app/src/main/res/xml/current_active_flight.xml` and implemented by `CurrentActiveFlightReceiver` in Kotlin.
+
+Widget dimensions:
+- **Minimum width**: 3 cells (180dp)
+- **Minimum height**: 2 cells (110dp)  
+- **Resize mode**: Horizontal and vertical
+- **Update period**: 15 minutes
+
+## Automatic updates
+
+### Background sync
+
+The widget uses WorkManager to update automatically:
+
+```dart
+// From lib/main.dart
+await Workmanager().registerPeriodicTask(
+  'widget-update',
+  'widgetUpdateTask',
+  frequency: const Duration(minutes: 15),
+  constraints: Constraints(
+    networkType: NetworkType.connected,
+  ),
+);
+```
+
+The `WidgetUpdateService` (`lib/services/widget_update_service.dart`) handles:
+
+1. **Checking for active flights**: Reads flight metadata from widget storage
+2. **Fetching updates**: Calls the Aero API with `forceUpdate=true`
+3. **Updating widget data**: Saves new information using `home_widget`
+4. **Triggering refresh**: Notifies Android to redraw the widget
+
+### Update conditions
+
+Widgets only update when:
+
+- ✅ Device has internet connection (WiFi or cellular)
+- ✅ Flight is stored in widget data
+- ✅ Flight arrival time hasn't passed by >1 hour
+- ✅ WorkManager is allowed to run background tasks
+
+### Smart expiry
+
+The widget automatically clears when:
+
+- Flight has landed >1 hour ago
+- Flight data becomes invalid
+- User manually clears the flight
+
+This prevents stale information from appearing on your home screen.
+
+## Widget implementation
+
+### Data flow
+
+Here's how flight data flows to the widget:
+
+<Steps>
+  <Step title="User views flight">
+    When you view a flight in the app, `WidgetUpdateService.updateWidgetWithFlight()` is called.
+  </Step>
+  <Step title="Data saved to widget storage">
+    Flight information is saved using the `home_widget` package:
+    
+    ```dart
+    await HomeWidget.saveWidgetData('airline_logo', airlineLogo);
+    await HomeWidget.saveWidgetData('flight_number_iata', flightNumberIata);
+    await HomeWidget.saveWidgetData('destination', destinationName);
+    // ... more fields
+    ```
+  </Step>
+  <Step title="Widget receives update">
+    Android is notified to update the widget:
+    
+    ```dart
+    await HomeWidget.updateWidget(
+      androidName: 'CurrentActiveFlightReceiver',
+      qualifiedAndroidName:
+        "fyi.procrastinator.aero.widgets.current_active_flight.CurrentActiveFlightReceiver"
+    );
+    ```
+  </Step>
+  <Step title="Background task scheduled">
+    WorkManager schedules periodic updates every 15 minutes.
+  </Step>
+  <Step title="Automatic refresh">
+    Every 15 minutes, `WidgetUpdateService.updateWidget()` fetches fresh data from the API and updates the widget.
+  </Step>
+</Steps>
+
+### Stored widget data
+
+The following data is stored for widget updates:
+
+| Key | Description | Example |
+|-----|-------------|----------|
+| `flight_id` | FlightAware ID | `UAE-54-1709812800` |
+| `flight_iata` | IATA flight number | `6E1045` |
+| `flight_icao` | ICAO flight number | `IGO1045` |
+| `flight_date` | Flight date (ISO 8601) | `2024-03-01T00:00:00.000Z` |
+| `airline_logo` | Logo URL | `https://...` |
+| `destination` | Arrival airport name | `Chhatrapati Shivaji International Airport` |
+| `departure_airport_code` | Departure IATA | `DEL` |
+| `arrival_airport_code` | Arrival IATA | `BOM` |
+| `departure_time_local` | Local departure time | `14:30` |
+| `arrival_time_local` | Local arrival time | `16:45` |
+| `is_delay_in_departure` | Departure delayed? | `true` / `false` |
+| `is_delay_in_arrival` | Arrival delayed? | `true` / `false` |
+| `is_expedite_in_departure` | Departure early? | `true` / `false` |
+| `is_expedite_in_arrival` | Arrival early? | `true` / `false` |
+| `arrival_time_scheduled` | For expiry check | `2024-03-01T16:45:00.000Z` |
+
+All data is stored in SharedPreferences via the `home_widget` package.
+
+## Delay and early indicators
+
+### Delay detection
+
+Flights are considered delayed when estimated/actual time is >5 minutes later than scheduled:
+
+```dart
+static bool _isDelayed(String? scheduledTime, String? estimatedTime) {
+  if (scheduledTime == null || estimatedTime == null) return false;
+  
+  final scheduled = DateTime.parse(scheduledTime);
+  final estimated = DateTime.parse(estimatedTime);
+  final diff = estimated.difference(scheduled);
+  return diff.inMinutes > 5;
+}
+```
+
+### Early detection
+
+Flights are considered expedited when estimated/actual time is >5 minutes earlier than scheduled:
+
+```dart
+static bool _isExpedited(String? scheduledTime, String? estimatedTime) {
+  if (scheduledTime == null || estimatedTime == null) return false;
+  
+  final scheduled = DateTime.parse(scheduledTime);
+  final estimated = DateTime.parse(estimatedTime);
+  final diff = scheduled.difference(estimated);
+  return diff.inMinutes > 5;
+}
+```
+
+### Visual indicators
+
+The widget displays status with color-coded badges:
+
+- 🔴 **Red badge**: "X min late" when delayed
+- 🟢 **Green badge**: "X min early" when expedited  
+- No badge: On time (within 5-minute threshold)
+
+Separate indicators appear for departure and arrival times.
+
+## Time formatting
+
+Times are displayed in the local timezone of each airport:
+
+```dart
+static String _formatTime(String? timeString, {String? timezone}) {
+  if (timeString == null || timeString.isEmpty) return '--:--';
+  
+  final dateTime = DateTime.parse(timeString);
+  
+  if (timezone != null && timezone.isNotEmpty) {
+    return dateTime.toTimezoneString(timezone, use24Hrs: true);
+  }
+  
+  return DateFormat('HH:mm').format(dateTime);
+}
+```
+
+This ensures departure time shows in departure airport's timezone and arrival time shows in arrival airport's timezone.
+
+## Troubleshooting
+
+### Widget not updating
+
+If your widget isn't updating automatically:
+
+<Steps>
+  <Step title="Check background data">
+    Go to Android Settings → Apps → Aero → Mobile data & WiFi → Background data. Ensure it's enabled.
+  </Step>
+  <Step title="Disable battery optimization">
+    Go to Settings → Apps → Aero → Battery → Unrestricted. This allows WorkManager to run.
+  </Step>
+  <Step title="Verify internet connection">
+    The widget requires an active internet connection to fetch updates. Check WiFi or cellular data.
+  </Step>
+  <Step title="Re-add the widget">
+    Remove the widget from your home screen and add it again. Then view a flight in the app.
+  </Step>
+</Steps>
+
+### Widget shows old flight
+
+If the widget displays a previous flight:
+
+1. Open the Aero app
+2. Search for and view your current flight
+3. The widget will update within 1 minute
+4. Background updates continue every 15 minutes
+
+### Widget is blank
+
+A blank widget means no flight is currently tracked:
+
+1. Open the Aero app
+2. Search for any flight  
+3. View the flight details
+4. The widget will populate automatically
+
+### Widget won't clear after landing
+
+The widget should auto-clear 1 hour after landing. If it doesn't:
+
+1. View a different flight in the app (replaces widget data)
+2. Or wait for the next background update (up to 15 minutes)
+3. Or remove and re-add the widget
+
+## Widget permissions
+
+The widget requires these Android permissions (automatically granted):
+
+```xml
+<uses-permission android:name="android.permission.INTERNET" />
+```
+
+No additional permissions needed. The widget receiver is declared in `AndroidManifest.xml`:
+
+```xml
+<receiver
+    android:name=".widgets.current_active_flight.CurrentActiveFlightReceiver"
+    android:exported="true">
+    <intent-filter>
+        <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+    </intent-filter>
+    <meta-data
+        android:name="android.appwidget.provider"
+        android:resource="@xml/current_active_flight" />
+</receiver>
+```
+
+## Future widget types
+
+Planned widgets for future releases:
+
+- **Compact flight widget**: Smaller 2×1 widget with minimal info
+- **Next flight widget**: Shows your next upcoming flight
+- **Airport status widget**: Live status of a specific airport
+- **Multi-flight widget**: Track up to 3 flights simultaneously
+
+Stay tuned for updates!
+
+See [Customization](/mobile/customization) for app icon and theme settings.

@@ -1,0 +1,321 @@
+---
+title: Authentication
+description: Learn how to authenticate with the Aero API using JWT tokens
+---
+
+The Aero API uses JWT (JSON Web Token) bearer authentication to secure endpoints. Most endpoints require a valid JWT token in the request headers.
+
+## Authentication flow
+
+<Steps>
+  <Step title="Register or login">
+    Create a new account or login with existing credentials to receive a JWT token
+  </Step>
+  
+  <Step title="Include token in requests">
+    Add the JWT token to the Authorization header in all authenticated requests
+  </Step>
+  
+  <Step title="Token verification">
+    The API verifies the token on each request and extracts user information
+  </Step>
+</Steps>
+
+## Registering a new user
+
+Create a new user account by sending a POST request to the registration endpoint:
+
+```bash
+curl -X POST http://localhost:3000/v1/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@example.com",
+    "password": "your-secure-password",
+    "name": "John Doe"
+  }'
+```
+
+### Request body
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `email` | string | Yes | User's email address |
+| `password` | string | Yes | User's password (will be hashed with Argon2) |
+| `name` | string | Yes | User's full name |
+
+### Response
+
+On successful registration, you'll receive a JWT token and user information:
+
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": {
+    "id": "user_abc123xyz",
+    "email": "user@example.com",
+    "name": "John Doe"
+  }
+}
+```
+
+<Note>
+Passwords are securely hashed using Argon2 before storage. User IDs are generated using CUID2 with a `user_` prefix.
+</Note>
+
+### Error responses
+
+| Status Code | Description |
+|------------|-------------|
+| `409` | Email address is already in use |
+| `500` | Internal server error |
+
+## Logging in
+
+Authenticate with existing credentials:
+
+```bash
+curl -X POST http://localhost:3000/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@example.com",
+    "password": "your-secure-password"
+  }'
+```
+
+### Request body
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `email` | string | Yes | User's email address (case-insensitive) |
+| `password` | string | Yes | User's password |
+
+### Response
+
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": {
+    "id": "user_abc123xyz",
+    "email": "user@example.com",
+    "name": "John Doe"
+  }
+}
+```
+
+### Error responses
+
+| Status Code | Description |
+|------------|-------------|
+| `401` | Incorrect password |
+| `404` | No user found with given email |
+| `500` | Internal server error |
+
+## Using the JWT token
+
+Once you have a JWT token, include it in the `Authorization` header of your requests using the Bearer scheme:
+
+```bash
+curl -X GET http://localhost:3000/v1/auth/@me \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+```
+
+### Token format
+
+The token must be prefixed with `Bearer ` followed by the JWT token:
+
+```
+Authorization: Bearer <your-jwt-token>
+```
+
+<Warning>
+Always keep your JWT token secure. Never expose it in client-side code or commit it to version control. Treat it like a password.
+</Warning>
+
+## Token structure
+
+The JWT token contains a payload with the user ID:
+
+```json
+{
+  "id": "user_abc123xyz"
+}
+```
+
+The token is signed with a secret key defined in your environment variables (`JWT_SECRET`).
+
+## Getting current user
+
+Verify your authentication and retrieve current user information:
+
+```bash
+curl -X GET http://localhost:3000/v1/auth/@me \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+```
+
+### Response
+
+```json
+{
+  "name": "John Doe",
+  "id": "user_abc123xyz"
+}
+```
+
+### Error responses
+
+| Status Code | Description |
+|------------|-------------|
+| `401` | Invalid or expired token |
+| `404` | User not found |
+| `500` | Internal server error |
+
+## Protected endpoints
+
+Most API endpoints require authentication. The OpenAPI specification indicates protected endpoints with the following security schemes:
+
+- **JWT-auth**: Bearer token authentication for all authenticated endpoints
+- **bearer**: Alternative bearer token scheme used by some endpoints
+
+Endpoints that require authentication will return `401 Unauthorized` if no valid token is provided.
+
+## Code examples
+
+<CodeGroup>
+
+```javascript JavaScript
+// Register a new user
+const registerResponse = await fetch('http://localhost:3000/v1/auth/register', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    email: 'user@example.com',
+    password: 'secure-password',
+    name: 'John Doe'
+  })
+});
+
+const { token, user } = await registerResponse.json();
+
+// Use the token for authenticated requests
+const flightsResponse = await fetch('http://localhost:3000/v1/flights/tracked', {
+  method: 'GET',
+  headers: {
+    'Authorization': `Bearer ${token}`
+  }
+});
+
+const flights = await flightsResponse.json();
+```
+
+```python Python
+import requests
+
+# Register a new user
+response = requests.post('http://localhost:3000/v1/auth/register', json={
+    'email': 'user@example.com',
+    'password': 'secure-password',
+    'name': 'John Doe'
+})
+
+data = response.json()
+token = data['token']
+
+# Use the token for authenticated requests
+flights_response = requests.get(
+    'http://localhost:3000/v1/flights/tracked',
+    headers={'Authorization': f'Bearer {token}'}
+)
+
+flights = flights_response.json()
+```
+
+```go Go
+package main
+
+import (
+    "bytes"
+    "encoding/json"
+    "net/http"
+)
+
+type RegisterRequest struct {
+    Email    string `json:"email"`
+    Password string `json:"password"`
+    Name     string `json:"name"`
+}
+
+type AuthResponse struct {
+    Token string `json:"token"`
+    User  struct {
+        ID    string `json:"id"`
+        Email string `json:"email"`
+        Name  string `json:"name"`
+    } `json:"user"`
+}
+
+func main() {
+    // Register a new user
+    registerData := RegisterRequest{
+        Email:    "user@example.com",
+        Password: "secure-password",
+        Name:     "John Doe",
+    }
+    
+    jsonData, _ := json.Marshal(registerData)
+    resp, _ := http.Post(
+        "http://localhost:3000/v1/auth/register",
+        "application/json",
+        bytes.NewBuffer(jsonData),
+    )
+    
+    var authResp AuthResponse
+    json.NewDecoder(resp.Body).Decode(&authResp)
+    
+    // Use the token for authenticated requests
+    req, _ := http.NewRequest(
+        "GET",
+        "http://localhost:3000/v1/flights/tracked",
+        nil,
+    )
+    req.Header.Set("Authorization", "Bearer "+authResp.Token)
+    
+    client := &http.Client{}
+    flightsResp, _ := client.Do(req)
+}
+```
+
+</CodeGroup>
+
+## Security considerations
+
+<Steps>
+  <Step title="Use HTTPS in production">
+    Always use HTTPS in production environments to encrypt token transmission
+  </Step>
+  
+  <Step title="Store tokens securely">
+    Store JWT tokens in secure storage (e.g., httpOnly cookies, secure local storage)
+  </Step>
+  
+  <Step title="Set JWT_SECRET">
+    Configure a strong, random `JWT_SECRET` environment variable for token signing
+  </Step>
+  
+  <Step title="Implement token refresh">
+    Consider implementing token refresh mechanisms for long-lived sessions
+  </Step>
+</Steps>
+
+## Environment configuration
+
+Ensure the following environment variable is set:
+
+```bash
+JWT_SECRET=your-secure-random-secret-key
+```
+
+<Warning>
+Never commit your `JWT_SECRET` to version control. Use a strong, randomly generated secret in production.
+</Warning>

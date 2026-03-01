@@ -1,0 +1,246 @@
+---
+title: Installation
+description: Install the Aero mobile app on iOS and Android devices
+---
+
+Get started with the Aero mobile app by following the installation instructions for your platform.
+
+## Android installation
+
+### Requirements
+
+- Android 6.0 (API level 23) or higher
+- ~50 MB of available storage
+- Internet connection for flight data
+
+### Install from source
+
+Currently, Aero is distributed as source code. Follow these steps to build and install:
+
+<Steps>
+  <Step title="Install Flutter">
+    Download and install Flutter SDK 3.6.0 or higher:
+    
+    ```bash
+    # macOS/Linux
+    git clone https://github.com/flutter/flutter.git -b stable
+    export PATH="$PATH:`pwd`/flutter/bin"
+    flutter doctor
+    ```
+    
+    Visit [flutter.dev/docs/get-started/install](https://flutter.dev/docs/get-started/install) for detailed instructions.
+  </Step>
+
+  <Step title="Clone the repository">
+    Clone the Aero source code:
+    
+    ```bash
+    git clone https://github.com/yourusername/aero.git
+    cd aero/app
+    ```
+  </Step>
+
+  <Step title="Install dependencies">
+    Install Flutter dependencies:
+    
+    ```bash
+    flutter pub get
+    ```
+    
+    This will install all required packages including:
+    - `dio` for HTTP requests
+    - `flutter_map` for map rendering
+    - `home_widget` for Android widgets
+    - `workmanager` for background tasks
+    - `sqflite` for local storage
+  </Step>
+
+  <Step title="Configure backend URL">
+    Update the API endpoint in `lib/constants/main.dart`:
+    
+    ```dart
+    const String API_BASE_URL = 'https://your-aero-backend.com';
+    ```
+  </Step>
+
+  <Step title="Build and install">
+    Connect your Android device or start an emulator, then run:
+    
+    ```bash
+    flutter run --release
+    ```
+    
+    Or build an APK:
+    
+    ```bash
+    flutter build apk --release
+    flutter install
+    ```
+  </Step>
+</Steps>
+
+### First launch
+
+On first launch, you'll need to:
+
+1. Create an account or log in
+2. Grant internet permission (automatic)
+3. Optionally grant location permission for nearby airports
+4. Optionally grant Bluetooth permission for Wear OS sync
+
+## iOS installation
+
+### Requirements
+
+- iOS 12.0 or higher
+- ~50 MB of available storage
+- Internet connection for flight data
+
+### Install from source
+
+<Steps>
+  <Step title="Install Flutter">
+    Download and install Flutter SDK 3.6.0 or higher. See Android instructions above.
+  </Step>
+
+  <Step title="Install Xcode">
+    Install Xcode 13.0 or higher from the Mac App Store.
+    
+    ```bash
+    sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
+    sudo xcodebuild -runFirstLaunch
+    ```
+  </Step>
+
+  <Step title="Install CocoaPods">
+    Install CocoaPods for dependency management:
+    
+    ```bash
+    sudo gem install cocoapods
+    ```
+  </Step>
+
+  <Step title="Clone and configure">
+    Clone the repository and install dependencies:
+    
+    ```bash
+    git clone https://github.com/yourusername/aero.git
+    cd aero/app
+    flutter pub get
+    cd ios
+    pod install
+    cd ..
+    ```
+  </Step>
+
+  <Step title="Configure backend URL">
+    Update the API endpoint in `lib/constants/main.dart`:
+    
+    ```dart
+    const String API_BASE_URL = 'https://your-aero-backend.com';
+    ```
+  </Step>
+
+  <Step title="Build and install">
+    Connect your iOS device or start a simulator, then run:
+    
+    ```bash
+    flutter run --release
+    ```
+    
+    Or open in Xcode:
+    
+    ```bash
+    open ios/Runner.xcworkspace
+    ```
+    
+    Then build and run from Xcode (⌘R).
+  </Step>
+</Steps>
+
+### Code signing
+
+<Warning>
+For iOS devices, you'll need an Apple Developer account and configure code signing in Xcode before installing.
+</Warning>
+
+1. Open `ios/Runner.xcworkspace` in Xcode
+2. Select the Runner project
+3. Go to Signing & Capabilities
+4. Select your development team
+5. Xcode will automatically manage provisioning profiles
+
+## Post-installation
+
+### Create an account
+
+On first launch, create an account:
+
+1. Tap "Register" on the login screen
+2. Enter your name and email
+3. Create a password
+4. Tap "Create Account"
+
+### Configure settings
+
+After logging in, you can customize:
+
+- **App icon**: Choose from 12 different icon designs (Android only)
+- **Theme**: Light mode is default (dark mode coming soon)
+- **Notifications**: Configure flight status alerts
+
+### Add a widget
+
+<Tabs>
+  <Tab title="Android">
+    1. Long-press on your home screen
+    2. Tap "Widgets"
+    3. Find "Aero" in the widget list
+    4. Long-press "Current Flight" widget
+    5. Drag to your home screen
+    6. Search for a flight in the app
+    7. The widget will automatically update with your active flight
+  </Tab>
+  <Tab title="iOS">
+    iOS widgets are not yet supported. Stay tuned for future updates.
+  </Tab>
+</Tabs>
+
+## Updating the app
+
+To update to the latest version:
+
+```bash
+cd aero/app
+git pull origin main
+flutter pub get
+flutter run --release
+```
+
+## Troubleshooting
+
+### Build fails on Android
+
+- Ensure you have Android SDK 23 or higher installed
+- Run `flutter doctor` to check for issues
+- Try `flutter clean` then `flutter pub get`
+
+### Build fails on iOS
+
+- Ensure Xcode Command Line Tools are installed
+- Run `pod repo update` in the `ios/` directory
+- Clean build folder in Xcode (⌘⇧K)
+
+### App won't connect to backend
+
+- Verify the `API_BASE_URL` is correct in `lib/constants/main.dart`
+- Check your internet connection
+- Ensure the backend server is running and accessible
+
+### Widgets not updating
+
+- Ensure Background & Unrestricted data is enabled for Aero
+- Check that WorkManager has permission to run background tasks
+- Try removing and re-adding the widget
+
+For more help, see the [Features](/mobile/features) documentation.

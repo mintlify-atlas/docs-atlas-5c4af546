@@ -1,0 +1,477 @@
+---
+title: Authentication
+description: JWT authentication implementation in the Aero backend
+---
+
+The Aero backend uses JSON Web Tokens (JWT) for stateless authentication. Users register and log in to receive a JWT token, which is then used to authenticate subsequent requests.
+
+## Authentication flow
+
+The authentication system consists of three main endpoints:
+
+1. **Register** - Create a new user account
+2. **Login** - Authenticate and receive a JWT token
+3. **Get current user** - Retrieve authenticated user information
+
+## Registration
+
+Create a new user account with email, password, and name.
+
+### Endpoint
+
+```
+POST /v1/auth/register
+```
+
+### Request body
+
+```typescript
+interface RegisterDTO {
+  email: string;
+  password: string;
+  name: string;
+}
+```
+
+### Example request
+
+```bash
+curl -X POST http://localhost:5000/v1/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "pilot@example.com",
+    "password": "securepassword123",
+    "name": "John Doe"
+  }'
+```
+
+### Response
+
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": {
+    "id": "user_clxx12345678",
+    "email": "pilot@example.com",
+    "name": "John Doe"
+  }
+}
+```
+
+### Implementation
+
+The registration process in `auth.service.ts`:
+
+```typescript src/resources/auth/auth.service.ts
+import { hash } from 'argon2';
+import { sign } from 'jsonwebtoken';
+import { createId } from '@paralleldrive/cuid2';
+
+async register(body: RegisterDTO) {
+  const { email, password, name } = body;
+  
+  // Check if email already exists
+  const existingUser = await prisma.user.findFirst({
+    where: { email: { equals: email, mode: 'insensitive' } },
+  });
+
+  if (existingUser) {
+    throw new HttpException(
+      'Email address is already in use.',
+      HttpStatus.CONFLICT,
+    );
+  }
+
+  // Hash password with Argon2
+  const hashedPassword = await hash(password);
+  
+  // Create user with prefixed CUID
+  const newUser = await prisma.user.create({
+    data: {
+      id: `user_${createId()}`,
+      name,
+      password: hashedPassword,
+      email,
+    },
+  });
+  
+  // Generate JWT token
+  const token = sign({ id: newUser.id }, this.service.get('JWT_SECRET'));
+  
+  return {
+    token,
+    user: { id: newUser.id, email, name },
+  };
+}
+```
+
+<Note>
+  Passwords are hashed using Argon2, which is more secure than bcrypt and recommended for new applications.
+</Note>
+
+## Login
+
+Authenticate an existing user and receive a JWT token.
+
+### Endpoint
+
+```
+POST /v1/auth/login
+```
+
+### Request body
+
+```typescript
+interface LoginDTO {
+  email: string;
+  password: string;
+}
+```
+
+### Example request
+
+```bash
+curl -X POST http://localhost:5000/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "pilot@example.com",
+    "password": "securepassword123"
+  }'
+```
+
+### Response
+
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": {
+    "id": "user_clxx12345678",
+    "email": "pilot@example.com",
+    "name": "John Doe"
+  }
+}
+```
+
+### Implementation
+
+The login process in `auth.service.ts`:
+
+```typescript src/resources/auth/auth.service.ts
+import { verify } from 'argon2';
+import { sign } from 'jsonwebtoken';
+
+async login(body: LoginDTO) {
+  const { password, email } = body;
+  
+  // Find user (case-insensitive email)
+  const user = await prisma.user.findFirst({
+    where: { email: { equals: email, mode: 'insensitive' } },
+  });
+  
+  if (!user) {
+    throw new HttpException(
+      'No user found with given email.',
+      HttpStatus.NOT_FOUND,
+    );
+  }
+
+  // Verify password with Argon2
+  const isPasswordCorrect = await verify(user.password, password);
+  
+  if (isPasswordCorrect === false) {
+    throw new HttpException(
+      'Incorrect password',
+      HttpStatus.UNAUTHORIZED,
+    );
+  }
+  
+  // Generate JWT token
+  const token = sign({ id: user.id }, this.service.get('JWT_SECRET'));
+  
+  return {
+    token,
+    user: {
+      name: user.name,
+      email: user.email,
+      id: user.id,
+    },
+  };
+}
+```
+
+## JWT token structure
+
+The JWT token contains the user ID as the payload:
+
+```json
+{
+  "id": "user_clxx12345678",
+  "iat": 1234567890
+}
+```
+
+- **id**: The user's unique identifier
+- **iat**: Issued at timestamp (automatically added by jsonwebtoken)
+
+<Warning>
+  JWT tokens in this implementation do not have an expiration time. Consider adding an `exp` claim for production use.
+</Warning>
+
+## Authentication middleware
+
+The `AuthMiddleware` validates JWT tokens on protected routes:
+
+```typescript src/middlewares/auth/auth.middleware.ts
+import { verify as verifyJWT } from 'jsonwebtoken';
+
+@Injectable()
+export class AuthMiddleware implements NestMiddleware {
+  constructor(private readonly authService: AuthService) {}
+  
+  async use(req: Request & { auth: Partial<User> }, res: Response, next: NextFunction) {
+    try {
+      const token = req.headers.authorization;
+      if (!token) throw Error();
+      
+      // Remove 'Bearer ' prefix if present
+      const cleanToken = token.startsWith('Bearer ') 
+        ? token.replaceAll('Bearer ', '') 
+        : token;
+      
+      // Verify and decode token
+      req.auth = await this.authService.verify(cleanToken);
+      next();
+    } catch (e) {
+      throw new HttpException(
+        'Missing or Expired Token',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+  }
+}
+```
+
+### Token verification
+
+The `verify` method validates tokens and retrieves user data:
+
+```typescript src/resources/auth/auth.service.ts
+import { verify as verifyJWT, JwtPayload } from 'jsonwebtoken';
+
+async verify(token: string) {
+  try {
+    const payload = verifyJWT(token, process.env.JWT_SECRET) as JwtPayload;
+    const user = await prisma.user.findFirst({
+      where: { id: payload.id },
+    });
+    if (!user) throw new Error('Unauthorized');
+    return user;
+  } catch (e) {
+    throw Error('Unauthorized');
+  }
+}
+```
+
+## Protected routes
+
+The middleware is applied globally but excludes certain public routes:
+
+```typescript src/app.module.ts
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(AuthMiddleware)
+      .exclude('/v(.*)/auth/(login|register)')
+      .exclude('/v(.*)/airports')
+      .exclude('/v(.*)/airlines')
+      .exclude('/static/(.*)')
+      .exclude('/assets/(.*)')
+      .forRoutes('*');
+  }
+}
+```
+
+### Public routes
+
+- `/v1/auth/login` - Login endpoint
+- `/v1/auth/register` - Registration endpoint
+- `/v1/airports` - Airport search
+- `/v1/airlines` - Airline search
+- `/static/*` - Static files
+- `/assets/*` - Asset files
+
+All other routes require authentication.
+
+## Auth decorator
+
+The `@Auth()` decorator extracts the authenticated user from requests:
+
+```typescript src/decorators/auth/auth.decorator.ts
+import { createParamDecorator, ExecutionContext } from '@nestjs/common';
+
+export const Auth = createParamDecorator(
+  (data: unknown, ctx: ExecutionContext) => {
+    const request = ctx.switchToHttp().getRequest();
+    return request.auth;
+  },
+);
+```
+
+### Usage in controllers
+
+```typescript src/resources/auth/auth.controller.ts
+import { Auth } from 'src/decorators/auth/auth.decorator';
+import { User } from '@prisma/client';
+
+@Get('@me')
+@ApiBearerAuth('JWT-auth')
+async getCurrentUser(@Auth() auth: User) {
+  return this.authService.hydrate(auth.id);
+}
+```
+
+## Get current user
+
+Retrieve information about the authenticated user.
+
+### Endpoint
+
+```
+GET /v1/auth/@me
+```
+
+### Headers
+
+```
+Authorization: Bearer <token>
+```
+
+### Example request
+
+```bash
+curl -X GET http://localhost:5000/v1/auth/@me \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+```
+
+### Response
+
+```json
+{
+  "id": "user_clxx12345678",
+  "name": "John Doe"
+}
+```
+
+<Note>
+  The email is intentionally omitted from the hydrate response for security reasons.
+</Note>
+
+## Making authenticated requests
+
+Include the JWT token in the `Authorization` header for all protected endpoints:
+
+<CodeGroup>
+  ```bash cURL
+  curl -X GET http://localhost:5000/v1/flights \
+    -H "Authorization: Bearer YOUR_JWT_TOKEN"
+  ```
+
+  ```javascript Fetch API
+  fetch('http://localhost:5000/v1/flights', {
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  })
+  ```
+
+  ```typescript Axios
+  axios.get('http://localhost:5000/v1/flights', {
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  })
+  ```
+</CodeGroup>
+
+## Error responses
+
+Authentication endpoints return these error responses:
+
+### 401 Unauthorized
+
+Returned when:
+- Password is incorrect
+- Token is missing or invalid
+- Token has expired
+
+```json
+{
+  "statusCode": 401,
+  "message": "Incorrect password"
+}
+```
+
+### 404 Not Found
+
+Returned when:
+- User email doesn't exist
+- Authenticated user doesn't exist
+
+```json
+{
+  "statusCode": 404,
+  "message": "No user found with given email."
+}
+```
+
+### 409 Conflict
+
+Returned when:
+- Email is already registered
+
+```json
+{
+  "statusCode": 409,
+  "message": "Email address is already in use."
+}
+```
+
+## Security best practices
+
+<Steps>
+  <Step title="Use strong JWT secrets">
+    Generate a long, random string for `JWT_SECRET`:
+
+    ```bash
+    openssl rand -base64 32
+    ```
+  </Step>
+
+  <Step title="Enable HTTPS in production">
+    Always use HTTPS to prevent token interception.
+  </Step>
+
+  <Step title="Implement token expiration">
+    Consider adding an `exp` claim to JWT tokens:
+
+    ```typescript
+    const token = sign(
+      { id: user.id },
+      jwtSecret,
+      { expiresIn: '7d' }
+    );
+    ```
+  </Step>
+
+  <Step title="Implement refresh tokens">
+    For better security, implement refresh tokens alongside access tokens.
+  </Step>
+
+  <Step title="Rate limit authentication endpoints">
+    Prevent brute force attacks by rate limiting login attempts.
+  </Step>
+</Steps>
+
+<Warning>
+  Never expose the JWT secret in client-side code or version control. Always use environment variables.
+</Warning>

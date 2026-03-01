@@ -1,0 +1,613 @@
+---
+title: Flight tracking
+description: Track flights and get real-time position data
+---
+
+## Search flights
+
+<CodeGroup>
+```bash cURL
+curl -X GET "https://api.aero.com/v1/flight/search?iata=UA123&icao=UAL123&date=2024-03-20&timezone=America/Los_Angeles" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+```javascript JavaScript
+const response = await fetch('https://api.aero.com/v1/flight/search?iata=UA123&icao=UAL123&date=2024-03-20&timezone=America/Los_Angeles', {
+  headers: {
+    'Authorization': 'Bearer YOUR_JWT_TOKEN'
+  }
+});
+const data = await response.json();
+```
+
+```python Python
+import requests
+
+response = requests.get(
+    'https://api.aero.com/v1/flight/search',
+    params={
+        'iata': 'UA123',
+        'icao': 'UAL123',
+        'date': '2024-03-20',
+        'timezone': 'America/Los_Angeles'
+    },
+    headers={'Authorization': 'Bearer YOUR_JWT_TOKEN'}
+)
+data = response.json()
+```
+</CodeGroup>
+
+<ParamField path="GET" type="/v1/flight/search">
+  Search for flights by identifier and optional date. Returns lightweight flight summaries for selection.
+</ParamField>
+
+### Query parameters
+
+<ParamField query="iata" type="string" required>
+  IATA flight number
+  
+  **Example:** `UA123`
+</ParamField>
+
+<ParamField query="icao" type="string" required>
+  ICAO flight number
+  
+  **Example:** `UAL123`
+</ParamField>
+
+<ParamField query="date" type="string">
+  Flight date (ISO format). Filters flights by date if provided
+  
+  **Example:** `2024-03-20`
+</ParamField>
+
+<ParamField query="timezone" type="string" required>
+  The timezone from which the request is being made
+  
+  **Example:** `America/Los_Angeles`
+</ParamField>
+
+### Response
+
+<ResponseField name="flights" type="array">
+  Array of flight candidates
+  
+  <Expandable title="Flight candidate object">
+    <ResponseField name="faFlightId" type="string">
+      FlightAware flight ID for fetching full details
+    </ResponseField>
+    
+    <ResponseField name="ident" type="string">
+      Flight identifier (e.g., "AC113")
+    </ResponseField>
+    
+    <ResponseField name="origin" type="object">
+      Origin airport information
+      
+      <Expandable title="properties">
+        <ResponseField name="code" type="string">
+          Airport code
+        </ResponseField>
+        
+        <ResponseField name="codeIata" type="string">
+          IATA code
+        </ResponseField>
+        
+        <ResponseField name="codeIcao" type="string">
+          ICAO code
+        </ResponseField>
+        
+        <ResponseField name="name" type="string">
+          Airport name
+        </ResponseField>
+        
+        <ResponseField name="city" type="string">
+          City name
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+    
+    <ResponseField name="destination" type="object">
+      Destination airport information (same structure as origin)
+    </ResponseField>
+    
+    <ResponseField name="scheduledOut" type="string">
+      Scheduled departure time (ISO 8601)
+    </ResponseField>
+    
+    <ResponseField name="scheduledOff" type="string">
+      Scheduled takeoff time (ISO 8601)
+    </ResponseField>
+    
+    <ResponseField name="status" type="string">
+      Flight status description
+    </ResponseField>
+    
+    <ResponseField name="airline" type="object">
+      Airline information
+      
+      <Expandable title="properties">
+        <ResponseField name="name" type="string">
+          Airline name
+        </ResponseField>
+        
+        <ResponseField name="iata" type="string">
+          IATA code
+        </ResponseField>
+        
+        <ResponseField name="icao" type="string">
+          ICAO code
+        </ResponseField>
+        
+        <ResponseField name="image" type="string">
+          Airline logo URL
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="count" type="number">
+  Number of flights found
+</ResponseField>
+
+### Response example
+
+```json
+{
+  "flights": [
+    {
+      "faFlightId": "UAL123-1710936000-airline-0123",
+      "ident": "UA123",
+      "origin": {
+        "code": "KLAX",
+        "codeIata": "LAX",
+        "codeIcao": "KLAX",
+        "name": "Los Angeles International Airport",
+        "city": "Los Angeles"
+      },
+      "destination": {
+        "code": "KJFK",
+        "codeIata": "JFK",
+        "codeIcao": "KJFK",
+        "name": "John F. Kennedy International Airport",
+        "city": "New York"
+      },
+      "scheduledOut": "2024-03-20T08:00:00Z",
+      "scheduledOff": "2024-03-20T08:15:00Z",
+      "status": "Scheduled",
+      "airline": {
+        "name": "United Airlines",
+        "iata": "UA",
+        "icao": "UAL",
+        "image": "https://cdn.aero.com/airlines/UA.png"
+      }
+    }
+  ],
+  "count": 1
+}
+```
+
+## Get flight details
+
+<CodeGroup>
+```bash cURL
+curl -X GET "https://api.aero.com/v1/flight?iata=UA123&icao=UAL123&timezone=America/Los_Angeles&faFlightId=UAL123-1710936000-airline-0123" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+```javascript JavaScript
+const response = await fetch('https://api.aero.com/v1/flight?iata=UA123&icao=UAL123&timezone=America/Los_Angeles&faFlightId=UAL123-1710936000-airline-0123', {
+  headers: {
+    'Authorization': 'Bearer YOUR_JWT_TOKEN'
+  }
+});
+const data = await response.json();
+```
+
+```python Python
+import requests
+
+response = requests.get(
+    'https://api.aero.com/v1/flight',
+    params={
+        'iata': 'UA123',
+        'icao': 'UAL123',
+        'timezone': 'America/Los_Angeles',
+        'faFlightId': 'UAL123-1710936000-airline-0123'
+    },
+    headers={'Authorization': 'Bearer YOUR_JWT_TOKEN'}
+)
+data = response.json()
+```
+</CodeGroup>
+
+<ParamField path="GET" type="/v1/flight">
+  Get detailed information about a specific flight including real-time tracking data. Use faFlightId to fetch a specific flight after searching.
+</ParamField>
+
+### Query parameters
+
+<ParamField query="iata" type="string" required>
+  IATA flight number
+  
+  **Example:** `UA123`
+</ParamField>
+
+<ParamField query="icao" type="string" required>
+  ICAO flight number
+  
+  **Example:** `UAL123`
+</ParamField>
+
+<ParamField query="date" type="string">
+  Flight date (ISO format). Defaults to current date if not provided
+  
+  **Example:** `2024-03-20`
+</ParamField>
+
+<ParamField query="timezone" type="string" required>
+  The timezone from which the request is being made
+  
+  **Example:** `America/Los_Angeles`
+</ParamField>
+
+<ParamField query="forceUpdate" type="boolean" default="false">
+  Force update the flight data (used to refresh the flight data)
+</ParamField>
+
+<ParamField query="faFlightId" type="string">
+  FlightAware flight ID to fetch a specific flight. Use this after searching for flights to get details of a selected flight.
+</ParamField>
+
+### Response
+
+<ResponseField name="id" type="string">
+  Flight ID
+</ResponseField>
+
+<ResponseField name="flightNo" type="string">
+  Flight number
+</ResponseField>
+
+<ResponseField name="callSign" type="string">
+  Flight callsign
+</ResponseField>
+
+<ResponseField name="aircraft" type="object">
+  Aircraft details
+  
+  <Expandable title="properties">
+    <ResponseField name="modeS" type="string">
+      Mode S transponder code
+    </ResponseField>
+    
+    <ResponseField name="registration" type="string">
+      Aircraft registration/tail number
+    </ResponseField>
+    
+    <ResponseField name="model" type="string">
+      Aircraft model
+    </ResponseField>
+    
+    <ResponseField name="image" type="string">
+      Aircraft image URL
+    </ResponseField>
+    
+    <ResponseField name="age" type="string">
+      Aircraft age in years
+    </ResponseField>
+    
+    <ResponseField name="firstFlightDate" type="string">
+      First flight date
+    </ResponseField>
+    
+    <ResponseField name="isFreighter" type="boolean">
+      Whether aircraft is a cargo freighter
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="airline" type="object">
+  Airline information
+</ResponseField>
+
+<ResponseField name="departure" type="object">
+  Departure information
+  
+  <Expandable title="properties">
+    <ResponseField name="airport" type="object">
+      Airport details including IATA, ICAO, name, timezone, and location
+    </ResponseField>
+    
+    <ResponseField name="scheduledTime" type="object">
+      Scheduled time in UTC and local timezone
+    </ResponseField>
+    
+    <ResponseField name="revisedTime" type="object">
+      Revised time if changed
+    </ResponseField>
+    
+    <ResponseField name="predictedTime" type="object">
+      Predicted time
+    </ResponseField>
+    
+    <ResponseField name="terminal" type="string">
+      Terminal
+    </ResponseField>
+    
+    <ResponseField name="gate" type="string">
+      Gate number
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="arrival" type="object">
+  Arrival information (same structure as departure)
+</ResponseField>
+
+<ResponseField name="cargo" type="boolean">
+  Whether this is a cargo flight
+</ResponseField>
+
+<ResponseField name="greatCircleDistance" type="object">
+  Distance in multiple units (meter, km, mile, nm, feet)
+</ResponseField>
+
+<ResponseField name="date" type="string">
+  Flight date (ISO 8601)
+</ResponseField>
+
+<ResponseField name="flightAwareData" type="object">
+  Comprehensive FlightAware data including status, delays, route, codeshares, and more
+</ResponseField>
+
+<ResponseField name="bookings" type="array">
+  Bookings associated with this flight
+</ResponseField>
+
+### Response example
+
+```json
+{
+  "id": "flight_abc123",
+  "flightNo": "UA123",
+  "callSign": "UAL123",
+  "aircraft": {
+    "registration": "N12345",
+    "model": "Boeing 737-900",
+    "image": "https://cdn.aero.com/aircraft/N12345.jpg",
+    "age": "8"
+  },
+  "airline": {
+    "name": "United Airlines",
+    "iata": "UA",
+    "icao": "UAL",
+    "image": "https://cdn.aero.com/airlines/UA.png"
+  },
+  "departure": {
+    "airport": {
+      "iata": "LAX",
+      "icao": "KLAX",
+      "name": "Los Angeles International Airport",
+      "timeZone": "America/Los_Angeles",
+      "location": {
+        "lat": 33.9416,
+        "lon": -118.4085
+      }
+    },
+    "scheduledTime": {
+      "utc": "2024-03-20T08:00:00Z",
+      "local": "2024-03-20T00:00:00-08:00"
+    },
+    "terminal": "7",
+    "gate": "75A"
+  },
+  "arrival": {
+    "airport": {
+      "iata": "JFK",
+      "icao": "KJFK",
+      "name": "John F. Kennedy International Airport"
+    },
+    "scheduledTime": {
+      "utc": "2024-03-20T16:30:00Z",
+      "local": "2024-03-20T12:30:00-04:00"
+    }
+  },
+  "cargo": false,
+  "greatCircleDistance": {
+    "km": "3974",
+    "mile": "2469",
+    "nm": "2145"
+  },
+  "date": "2024-03-20T08:00:00Z"
+}
+```
+
+## Get flight track/path
+
+<CodeGroup>
+```bash cURL
+curl -X GET "https://api.aero.com/v1/flight/track?iata=UA123&icao=UAL123&date=2024-03-20&timezone=America/Los_Angeles" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+```javascript JavaScript
+const response = await fetch('https://api.aero.com/v1/flight/track?iata=UA123&icao=UAL123&date=2024-03-20&timezone=America/Los_Angeles', {
+  headers: {
+    'Authorization': 'Bearer YOUR_JWT_TOKEN'
+  }
+});
+const data = await response.json();
+```
+
+```python Python
+import requests
+
+response = requests.get(
+    'https://api.aero.com/v1/flight/track',
+    params={
+        'iata': 'UA123',
+        'icao': 'UAL123',
+        'date': '2024-03-20',
+        'timezone': 'America/Los_Angeles'
+    },
+    headers={'Authorization': 'Bearer YOUR_JWT_TOKEN'}
+)
+data = response.json()
+```
+</CodeGroup>
+
+<ParamField path="GET" type="/v1/flight/track">
+  Get the flight path with all position data points for a specific flight
+</ParamField>
+
+### Query parameters
+
+<ParamField query="iata" type="string" required>
+  IATA flight number
+  
+  **Example:** `UA123`
+</ParamField>
+
+<ParamField query="icao" type="string" required>
+  ICAO flight number
+  
+  **Example:** `UAL123`
+</ParamField>
+
+<ParamField query="date" type="string">
+  Flight date (ISO format). Defaults to current date if not provided
+  
+  **Example:** `2024-03-20`
+</ParamField>
+
+<ParamField query="timezone" type="string" required>
+  The timezone from which the request is being made
+  
+  **Example:** `America/Los_Angeles` or `IST`
+</ParamField>
+
+### Response
+
+<ResponseField name="actual_distance" type="number">
+  Distance flown in miles as of the latest position point
+  
+  **Example:** `2450`
+</ResponseField>
+
+<ResponseField name="positions" type="array">
+  Array of flight positions
+  
+  <Expandable title="Position object">
+    <ResponseField name="fa_flight_id" type="string">
+      FlightAware flight ID for this position
+    </ResponseField>
+    
+    <ResponseField name="altitude" type="number">
+      Aircraft altitude in hundreds of feet
+      
+      **Example:** `350` (35,000 feet)
+    </ResponseField>
+    
+    <ResponseField name="altitude_change" type="string">
+      Altitude change indicator: `C` (climbing), `D` (descending), `-` (level)
+    </ResponseField>
+    
+    <ResponseField name="groundspeed" type="number">
+      Groundspeed in knots
+      
+      **Example:** `450`
+    </ResponseField>
+    
+    <ResponseField name="heading" type="number">
+      Aircraft heading in degrees (0-360)
+      
+      **Example:** `270`
+    </ResponseField>
+    
+    <ResponseField name="latitude" type="number">
+      Latitude position
+      
+      **Example:** `40.7128`
+    </ResponseField>
+    
+    <ResponseField name="longitude" type="number">
+      Longitude position
+      
+      **Example:** `-74.0060`
+    </ResponseField>
+    
+    <ResponseField name="timestamp" type="string">
+      Time that position was received
+      
+      **Example:** `2024-03-20T14:30:00Z`
+    </ResponseField>
+    
+    <ResponseField name="update_type" type="string">
+      Update type: `P` (projected), `O` (oceanic), `Z` (radar), `A` (ADS-B), `M` (multilateration), `D` (datalink), `X` (surface), `S` (space-based), `V` (virtual)
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+### Response example
+
+```json
+{
+  "actual_distance": 2450,
+  "positions": [
+    {
+      "altitude": 350,
+      "altitude_change": "C",
+      "groundspeed": 450,
+      "heading": 270,
+      "latitude": 40.7128,
+      "longitude": -74.0060,
+      "timestamp": "2024-03-20T14:30:00Z",
+      "update_type": "A"
+    },
+    {
+      "altitude": 355,
+      "altitude_change": "C",
+      "groundspeed": 455,
+      "heading": 271,
+      "latitude": 40.8128,
+      "longitude": -74.1060,
+      "timestamp": "2024-03-20T14:31:00Z",
+      "update_type": "A"
+    }
+  ]
+}
+```
+
+### Error responses
+
+<ResponseField name="400" type="object">
+  Invalid request parameters or flight not found
+  
+  ```json
+  {
+    "message": "Flight not found"
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="401" type="object">
+  User is not authenticated
+  
+  ```json
+  {
+    "message": "Unauthorized"
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="500" type="object">
+  Internal server error
+  
+  ```json
+  {
+    "message": "Internal server error"
+  }
+  ```
+</ResponseField>

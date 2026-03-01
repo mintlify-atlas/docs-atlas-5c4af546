@@ -1,0 +1,504 @@
+---
+title: Database schema
+description: PostgreSQL database schema and Prisma models for Aero
+---
+
+The Aero backend uses PostgreSQL as its database and Prisma as the ORM. The schema includes models for users, airports, airlines, aircraft, flights, and flight tracking data.
+
+## Database setup
+
+### Connection
+
+Configure the PostgreSQL connection in your `.env` file:
+
+```bash
+DATABASE_URL="postgresql://user:password@localhost:5432/aero?schema=public"
+```
+
+### Migrations
+
+Run migrations to set up the database schema:
+
+<CodeGroup>
+  ```bash Development
+  # Create and apply migration
+  npx prisma migrate dev
+  ```
+
+  ```bash Production
+  # Apply migrations
+  npx prisma migrate deploy
+  ```
+
+  ```bash Reset
+  # Reset database (warning: deletes all data)
+  npx prisma migrate reset
+  ```
+</CodeGroup>
+
+## Core models
+
+### User
+
+The User model stores authentication and profile information:
+
+```prisma
+model User {
+  id       String @id @unique
+  name     String
+  email    String @unique
+  password String
+
+  createdAt DateTime        @default(now()) @map("created_at")
+  updatedAt DateTime        @updatedAt @map("updated_at")
+  flights   Flight[]
+  bookings  FlightBooking[]
+
+  @@map("users")
+}
+```
+
+<Note>
+  User IDs are generated using CUID2 with the prefix `user_`. Passwords are hashed using Argon2.
+</Note>
+
+### Airport
+
+The Airport model contains comprehensive airport data:
+
+```prisma
+enum AirportType {
+  small_airport
+  seaplane_base
+  medium_airport
+  large_airport
+  heliport
+  closed
+  balloonport
+}
+
+model Airport {
+  id           String      @id @unique @default(cuid())
+  ident        String
+  type         AirportType
+  elevation    Decimal?
+  continent    String
+  isoCountry   String      @map("iso_country")
+  isoRegion    String      @map("iso_region")
+  municipality String?
+  gpsCode      String?     @map("gps_code")
+  iataCode     String?     @map("iata_code")
+  name         String
+  lat          Decimal
+  long         Decimal
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([ident])
+  @@index([municipality])
+  @@index([gpsCode])
+  @@index([iataCode])
+  @@index([name])
+  @@map("airports")
+}
+```
+
+Indexes are created on frequently searched fields for optimal query performance.
+
+### Airline
+
+The Airline model stores airline information:
+
+```prisma
+model Airline {
+  id   String @id @unique @default(cuid())
+  name String
+  icao String
+  iata String
+
+  image String?
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([name])
+  @@index([icao])
+  @@index([iata])
+  @@map("airlines")
+}
+```
+
+### Aircraft
+
+The Aircraft model tracks aircraft details:
+
+```prisma
+model Aircraft {
+  id              String                 @id @unique @default(cuid())
+  aircraft_id     String
+  reg             String
+  hexIcao         String?                @map("hex_icao")
+  modelCode       String?                @map("model_code")
+  age             Decimal?
+  firstFlightDate DateTime?              @map("first_flight_date")
+  deliveryDate    DateTime?              @map("delivery_date")
+  typeName        String?                @map("type_name")
+  isFreighter     Boolean                @map("is_freighter")
+  image           String?
+  attribution     String?
+  registrations   AircraftRegistration[]
+
+  // Store the whole json payload from api
+  payload Json?
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("aircrafts")
+}
+```
+
+## Flight tracking
+
+### Flight
+
+The main Flight model for user-tracked flights:
+
+```prisma
+model Flight {
+  id String @id @unique @default(cuid())
+
+  greatCircleDistance GreatCircleDistance?
+  flightAwareData     FlightAwareData?
+
+  flightNo  String   @map("flight_no")
+  aircraft  Json
+  airline   Json
+  arrival   Json
+  departure Json
+  cargo     Boolean  @default(false)
+  date      DateTime
+  callSign  String   @map("call_sign")
+
+  createdAt                 DateTime          @default(now()) @map("created_at")
+  updatedAt                 DateTime          @updatedAt @map("updated_at")
+  FlightPositions           FlightPositions[]
+  allFlightPositionsFetched Boolean           @default(false) @map("all_flight_positions_fetched")
+  bookings                  FlightBooking[]
+
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+
+  @@map("flight")
+}
+```
+
+### FlightPositions
+
+Tracks real-time and historical flight positions:
+
+```prisma
+enum AltitudeChange {
+  Climb
+  Descend
+  None
+}
+
+enum UpdateType {
+  Projected
+  Oceanic
+  Radar
+  ADSB
+  Multilateration
+  Datalink
+  Surface_And_Near_Surface
+  Spaced_Based
+  Virtual_Event
+}
+
+model FlightPositions {
+  id String @id @unique @default(cuid())
+
+  altitude       Int
+  altitudeChange AltitudeChange @default(None) @map("altitude_change")
+
+  groundSpeed Int      @map("ground_speed")
+  heading     Int?
+  latitude    Decimal
+  longitude   Decimal
+  timestamp   DateTime
+
+  updatedType UpdateType @map("update_type")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  flight   Flight? @relation(fields: [flightId], references: [id])
+  flightId String? @map("flight_id")
+
+  @@index([timestamp])
+  @@index([latitude, longitude])
+  @@index([altitude])
+  @@index([altitudeChange])
+  @@index([groundSpeed])
+  @@index([heading])
+  @@index([updatedType])
+  @@map("flight_positions")
+}
+```
+
+### FlightBooking
+
+Stores booking details for flights:
+
+```prisma
+enum SeatType {
+  window
+  middle
+  aisle
+  jumpseat
+  captain
+  pilot
+  copilot
+  flight_engineer
+  flight_attendant
+  observer
+  other
+}
+
+enum SeatingClass {
+  economy
+  premium_economy
+  business
+  first
+  private
+  other
+}
+
+enum BookingReason {
+  personal
+  business
+  crew
+  training
+  repositioning
+  other
+}
+
+model FlightBooking {
+  id String @id @unique @default(cuid())
+
+  /// Booking code/confirmation code (e.g., "ABC123")
+  bookingCode String? @map("booking_code")
+
+  /// Seat number (e.g., "12A", "1F")
+  seatNumber String? @map("seat_number")
+
+  /// Type of seat position
+  seatType SeatType? @map("seat_type")
+
+  /// Class of service
+  seatingClass SeatingClass? @map("seating_class")
+
+  /// Reason for the flight
+  reason BookingReason?
+
+  /// Notes about the booking
+  notes String?
+
+  flight   Flight @relation(fields: [flightId], references: [id], onDelete: Cascade)
+  flightId String @map("flight_id")
+
+  user   User   @relation(fields: [userId], references: [id])
+  userId String @map("user_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([flightId])
+  @@index([userId])
+  @@index([bookingCode])
+  @@map("flight_bookings")
+}
+```
+
+### FlightAwareData
+
+Detailed flight information from FlightAware API:
+
+```prisma
+model FlightAwareData {
+  id String @id @unique @default(cuid())
+
+  /// FlightAware flight ID - unique identifier
+  faFlightId String @map("fa_flight_id")
+
+  /// Flight identifier
+  ident String
+
+  /// ICAO operator code + flight number
+  identIcao String? @map("ident_icao")
+
+  /// IATA operator code + flight number
+  identIata String? @map("ident_iata")
+
+  /// Actual departure runway
+  actualRunwayOff String? @map("actual_runway_off")
+
+  /// Actual arrival runway
+  actualRunwayOn String? @map("actual_runway_on")
+
+  /// Aircraft registration (tail number)
+  registration String?
+
+  /// Departure delay in seconds (negative = early)
+  departureDelay Int? @map("departure_delay")
+
+  /// Arrival delay in seconds (negative = early)
+  arrivalDelay Int? @map("arrival_delay")
+
+  /// Flight status description
+  status String
+
+  /// Planned flight distance in statute miles
+  routeDistance Int? @map("route_distance")
+
+  /// Flight route description
+  route String?
+
+  /// Gate and terminal information
+  gateOrigin String? @map("gate_origin")
+  gateDestination String? @map("gate_destination")
+  terminalOrigin String? @map("terminal_origin")
+  terminalDestination String? @map("terminal_destination")
+
+  /// Timing information
+  scheduledOut DateTime? @map("scheduled_out")
+  actualOut DateTime? @map("actual_out")
+  scheduledOff DateTime? @map("scheduled_off")
+  actualOff DateTime? @map("actual_off")
+  scheduledOn DateTime? @map("scheduled_on")
+  actualOn DateTime? @map("actual_on")
+  scheduledIn DateTime? @map("scheduled_in")
+  actualIn DateTime? @map("actual_in")
+
+  /// Status flags
+  blocked Boolean @default(false)
+  diverted Boolean @default(false)
+  cancelled Boolean @default(false)
+
+  /// Airport information
+  originCode String? @map("origin_code")
+  originName String? @map("origin_name")
+  destinationCode String? @map("destination_code")
+  destinationName String? @map("destination_name")
+
+  flight   Flight @relation(fields: [flightId], references: [id], onDelete: Cascade)
+  flightId String @unique @map("flight_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([ident])
+  @@index([faFlightId])
+  @@index([registration])
+  @@map("flight_aware_data")
+}
+```
+
+<Note>
+  See the full schema in `prisma/schema.prisma` for all fields and relationships.
+</Note>
+
+### GreatCircleDistance
+
+Stores calculated flight distances in multiple units:
+
+```prisma
+model GreatCircleDistance {
+  id String @id @unique @default(cuid())
+
+  meter Decimal
+  km    Decimal
+  mile  Decimal
+  nm    Decimal
+  feet  Decimal
+
+  flight   Flight @relation(fields: [flightId], references: [id], onDelete: Cascade)
+  flightId String @unique @map("flight_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("great_circle_distance")
+}
+```
+
+## Prisma client usage
+
+The Prisma client is exported from `src/db/index.ts`:
+
+```typescript
+import { prisma } from 'src/db';
+
+// Query users
+const user = await prisma.user.findFirst({
+  where: { email: 'user@example.com' },
+});
+
+// Create a flight
+const flight = await prisma.flight.create({
+  data: {
+    flightNo: 'AA100',
+    userId: user.id,
+    date: new Date(),
+    callSign: 'AAL100',
+    aircraft: {},
+    airline: {},
+    arrival: {},
+    departure: {},
+  },
+});
+```
+
+## Database operations
+
+### Generate Prisma client
+
+After modifying the schema, regenerate the client:
+
+```bash
+npx prisma generate
+```
+
+### View database in Prisma Studio
+
+Open the Prisma Studio GUI to view and edit data:
+
+```bash
+npx prisma studio
+```
+
+### Create migrations
+
+Create a new migration after schema changes:
+
+```bash
+npx prisma migrate dev --name description_of_changes
+```
+
+<Warning>
+  Always test migrations in development before applying to production.
+</Warning>
+
+## Indexes and performance
+
+The schema includes strategic indexes for optimal query performance:
+
+- **Airport**: Indexed on `ident`, `municipality`, `gpsCode`, `iataCode`, and `name`
+- **Airline**: Indexed on `name`, `icao`, and `iata`
+- **FlightPositions**: Indexed on `timestamp`, `latitude/longitude` (composite), `altitude`, `groundSpeed`, `heading`, and `updatedType`
+- **FlightBooking**: Indexed on `flightId`, `userId`, and `bookingCode`
+- **FlightAwareData**: Indexed on `ident`, `faFlightId`, and `registration`
+
+These indexes ensure fast lookups for common queries like searching airports by IATA code or tracking flight positions by timestamp.

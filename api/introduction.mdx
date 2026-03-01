@@ -1,0 +1,125 @@
+---
+title: Introduction
+description: Get started with the Aero API for flight tracking and aviation data
+---
+
+The Aero API provides comprehensive access to real-time flight tracking, airport information, airline data, and flight booking management. Built with NestJS, the API offers a RESTful interface for integrating aviation data into your applications.
+
+## Base URL
+
+All API requests should be made to:
+
+```
+http://localhost:3000
+```
+
+<Note>
+The API uses versioned endpoints with a `/v1` prefix. All production endpoints follow the pattern: `http://localhost:3000/v1/{resource}`
+</Note>
+
+## API versioning
+
+The API uses URI-based versioning with version 1 as the default. All endpoints are prefixed with `/v1`.
+
+## Key features
+
+The Aero API provides access to:
+
+<Steps>
+  <Step title="Authentication">
+    Secure user registration and login with JWT tokens
+  </Step>
+  
+  <Step title="Flight tracking">
+    Real-time flight tracking with detailed position data and flight paths
+  </Step>
+  
+  <Step title="Airport data">
+    Access to over 20,000 airport records with search capabilities
+  </Step>
+  
+  <Step title="Airline information">
+    Comprehensive database of over 800 commercial airlines
+  </Step>
+  
+  <Step title="Flight bookings">
+    Create and manage flight bookings with complete CRUD operations
+  </Step>
+  
+  <Step title="User profiles">
+    Track and analyze personal flight statistics and travel history
+  </Step>
+</Steps>
+
+## Response format
+
+All API responses are returned in JSON format. Successful responses return the requested data, while errors return an error object with a descriptive message.
+
+### Success response
+
+```json
+{
+  "id": "user_abc123",
+  "name": "John Doe"
+}
+```
+
+### Error response
+
+```json
+{
+  "message": "No user found with given email."
+}
+```
+
+## Status codes
+
+The API uses standard HTTP status codes:
+
+| Status Code | Description |
+|------------|-------------|
+| `200` | Success - Request completed successfully |
+| `201` | Created - Resource created successfully |
+| `400` | Bad Request - Invalid request parameters |
+| `401` | Unauthorized - Authentication required or failed |
+| `404` | Not Found - Resource not found |
+| `409` | Conflict - Resource already exists |
+| `500` | Internal Server Error - Server error occurred |
+
+## Rate limiting
+
+The API relies on third-party services including:
+
+- **Aviation Stack API** - Flight data between airports
+- **AeroDataBox (RapidAPI)** - Aviation data
+- **FlightAware API** - Real-time flight tracking
+
+<Warning>
+Rate limits depend on your subscription tier with these third-party services. Configure your API keys in the environment variables to access these features.
+</Warning>
+
+## Interactive documentation
+
+The API includes interactive documentation powered by Scalar at:
+
+```
+http://localhost:3000/docs
+```
+
+This provides a modern interface to explore endpoints, test requests, and view detailed schema information.
+
+## Next steps
+
+<Steps>
+  <Step title="Set up authentication">
+    Learn how to register users and authenticate API requests
+  </Step>
+  
+  <Step title="Explore endpoints">
+    Browse the available API endpoints in the reference documentation
+  </Step>
+  
+  <Step title="Make your first request">
+    Try querying airport or airline data
+  </Step>
+</Steps>

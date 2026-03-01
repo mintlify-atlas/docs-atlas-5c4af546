@@ -1,0 +1,464 @@
+---
+title: User profile
+description: Get user profile statistics and flight history analytics
+---
+
+## Get profile stats
+
+<CodeGroup>
+```bash cURL
+curl -X GET "https://api.aero.com/v1/profile/@me" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+```javascript JavaScript
+const response = await fetch('https://api.aero.com/v1/profile/@me', {
+  headers: {
+    'Authorization': 'Bearer YOUR_JWT_TOKEN'
+  }
+});
+const data = await response.json();
+```
+
+```python Python
+import requests
+
+response = requests.get(
+    'https://api.aero.com/v1/profile/@me',
+    headers={'Authorization': 'Bearer YOUR_JWT_TOKEN'}
+)
+data = response.json()
+```
+</CodeGroup>
+
+<ParamField path="GET" type="/v1/profile/@me">
+  Returns comprehensive statistics about tracked flights including passport data, aircraft stats, airlines, airports, and routes.
+</ParamField>
+
+### Response
+
+<ResponseField name="passport" type="object">
+  Overall flight statistics
+  
+  <Expandable title="properties">
+    <ResponseField name="totalFlights" type="number">
+      Total number of flights taken
+    </ResponseField>
+    
+    <ResponseField name="totalDistanceKm" type="number">
+      Total distance traveled in kilometers
+    </ResponseField>
+    
+    <ResponseField name="totalDurationMinutes" type="number">
+      Total flight duration in minutes (including delays)
+    </ResponseField>
+    
+    <ResponseField name="totalAirports" type="number">
+      Number of unique airports visited
+    </ResponseField>
+    
+    <ResponseField name="totalAirlines" type="number">
+      Number of unique airlines flown
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="mostFlownAircraft" type="object">
+  Most frequently flown aircraft type
+  
+  <Expandable title="properties">
+    <ResponseField name="aircraftName" type="string">
+      Name of the most flown aircraft
+    </ResponseField>
+    
+    <ResponseField name="flightCount" type="number">
+      Number of flights on this aircraft type
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="aircraftStats" type="object">
+  Detailed aircraft statistics
+  
+  <Expandable title="properties">
+    <ResponseField name="mostFlownAircraftName" type="string">
+      Name of the most flown aircraft model
+    </ResponseField>
+    
+    <ResponseField name="mostFlownAircraftFlightCount" type="number">
+      Number of flights on the most flown aircraft
+    </ResponseField>
+    
+    <ResponseField name="mostFlownAircraftImage" type="string">
+      Image URL of the most flown aircraft
+    </ResponseField>
+    
+    <ResponseField name="mostFlownAircraftFlights" type="array">
+      Array of flight summaries for the most flown aircraft
+    </ResponseField>
+    
+    <ResponseField name="mostCommonTailNumber" type="string">
+      Most frequently encountered tail number
+    </ResponseField>
+    
+    <ResponseField name="mostCommonTailNumberCount" type="number">
+      Number of times this tail number was flown
+    </ResponseField>
+    
+    <ResponseField name="medianAge" type="number">
+      Median age of all aircraft flown (in years)
+    </ResponseField>
+    
+    <ResponseField name="youngestAircraft" type="object">
+      Details of the youngest aircraft flown
+      
+      <Expandable title="properties">
+        <ResponseField name="aircraftName" type="string">
+          Aircraft model name
+        </ResponseField>
+        
+        <ResponseField name="tailNumber" type="string">
+          Aircraft registration
+        </ResponseField>
+        
+        <ResponseField name="age" type="number">
+          Aircraft age in years
+        </ResponseField>
+        
+        <ResponseField name="image" type="string">
+          Aircraft image URL
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+    
+    <ResponseField name="oldestAircraft" type="object">
+      Details of the oldest aircraft flown (same structure as youngestAircraft)
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="shortestDistanceFlight" type="object">
+  The flight with the shortest distance
+  
+  <Expandable title="properties">
+    <ResponseField name="flight" type="object">
+      Flight summary object with details
+    </ResponseField>
+    
+    <ResponseField name="distanceKm" type="number">
+      Distance in kilometers
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="longestDistanceFlight" type="object">
+  The flight with the longest distance (same structure as shortestDistanceFlight)
+</ResponseField>
+
+<ResponseField name="shortestDurationFlight" type="object">
+  The flight with the shortest duration
+  
+  <Expandable title="properties">
+    <ResponseField name="flight" type="object">
+      Flight summary object with details
+    </ResponseField>
+    
+    <ResponseField name="durationMinutes" type="number">
+      Duration in minutes
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="longestDurationFlight" type="object">
+  The flight with the longest duration (same structure as shortestDurationFlight)
+</ResponseField>
+
+<ResponseField name="airlines" type="array">
+  Array of airline statistics sorted by flight count
+  
+  <Expandable title="Airline stats object">
+    <ResponseField name="airlineName" type="string">
+      Airline name
+    </ResponseField>
+    
+    <ResponseField name="airlineIata" type="string">
+      IATA code
+    </ResponseField>
+    
+    <ResponseField name="airlineIcao" type="string">
+      ICAO code
+    </ResponseField>
+    
+    <ResponseField name="image" type="string">
+      Airline image URL from database (when available)
+    </ResponseField>
+    
+    <ResponseField name="flightCount" type="number">
+      Number of flights with this airline
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="airports" type="array">
+  Array of airport statistics sorted by departure count
+  
+  <Expandable title="Airport stats object">
+    <ResponseField name="airportCode" type="string">
+      Airport IATA/ICAO code
+    </ResponseField>
+    
+    <ResponseField name="airportName" type="string">
+      Airport name
+    </ResponseField>
+    
+    <ResponseField name="departureCount" type="number">
+      Number of flights departing from this airport
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="topRoutes" type="array">
+  Array of most frequently flown routes
+  
+  <Expandable title="Route object">
+    <ResponseField name="origin" type="string">
+      Origin airport code
+    </ResponseField>
+    
+    <ResponseField name="destination" type="string">
+      Destination airport code
+    </ResponseField>
+    
+    <ResponseField name="flightCount" type="number">
+      Number of times this route was flown
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+### Response example
+
+```json
+{
+  "passport": {
+    "totalFlights": 127,
+    "totalDistanceKm": 185420,
+    "totalDurationMinutes": 15840,
+    "totalAirports": 42,
+    "totalAirlines": 18
+  },
+  "mostFlownAircraft": {
+    "aircraftName": "Boeing 737-800",
+    "flightCount": 35
+  },
+  "aircraftStats": {
+    "mostFlownAircraftName": "Boeing 737-800",
+    "mostFlownAircraftFlightCount": 35,
+    "mostFlownAircraftImage": "https://cdn.aero.com/aircraft/737-800.jpg",
+    "mostFlownAircraftFlights": [
+      {
+        "id": "flight_123",
+        "flightNo": "UA456",
+        "callSign": "UAL456",
+        "airline": {
+          "name": "United Airlines",
+          "iata": "UA",
+          "icao": "UAL"
+        },
+        "departureAirportCode": "LAX",
+        "departureAirportName": "Los Angeles International Airport",
+        "arrivalAirportCode": "SFO",
+        "arrivalAirportName": "San Francisco International Airport",
+        "date": "2024-03-15T08:00:00Z"
+      }
+    ],
+    "mostCommonTailNumber": "N12345",
+    "mostCommonTailNumberCount": 8,
+    "medianAge": 12.5,
+    "youngestAircraft": {
+      "aircraftName": "Airbus A321neo",
+      "tailNumber": "N98765",
+      "age": 2,
+      "image": "https://cdn.aero.com/aircraft/N98765.jpg"
+    },
+    "oldestAircraft": {
+      "aircraftName": "Boeing 757-200",
+      "tailNumber": "N54321",
+      "age": 28
+    }
+  },
+  "shortestDistanceFlight": {
+    "flight": {
+      "id": "flight_456",
+      "flightNo": "DL123",
+      "departureAirportCode": "LAX",
+      "arrivalAirportCode": "SFO",
+      "date": "2024-02-10T10:00:00Z"
+    },
+    "distanceKm": 543
+  },
+  "longestDistanceFlight": {
+    "flight": {
+      "id": "flight_789",
+      "flightNo": "SQ12",
+      "departureAirportCode": "SIN",
+      "arrivalAirportCode": "JFK",
+      "date": "2024-01-15T23:00:00Z"
+    },
+    "distanceKm": 15344
+  },
+  "shortestDurationFlight": {
+    "flight": {
+      "id": "flight_456",
+      "flightNo": "DL123"
+    },
+    "durationMinutes": 65
+  },
+  "longestDurationFlight": {
+    "flight": {
+      "id": "flight_789",
+      "flightNo": "SQ12"
+    },
+    "durationMinutes": 1140
+  },
+  "airlines": [
+    {
+      "airlineName": "United Airlines",
+      "airlineIata": "UA",
+      "airlineIcao": "UAL",
+      "image": "https://cdn.aero.com/airlines/UA.png",
+      "flightCount": 45
+    },
+    {
+      "airlineName": "Delta Air Lines",
+      "airlineIata": "DL",
+      "airlineIcao": "DAL",
+      "image": "https://cdn.aero.com/airlines/DL.png",
+      "flightCount": 32
+    }
+  ],
+  "airports": [
+    {
+      "airportCode": "LAX",
+      "airportName": "Los Angeles International Airport",
+      "departureCount": 28
+    },
+    {
+      "airportCode": "SFO",
+      "airportName": "San Francisco International Airport",
+      "departureCount": 22
+    }
+  ],
+  "topRoutes": [
+    {
+      "origin": "LAX",
+      "destination": "SFO",
+      "flightCount": 12
+    },
+    {
+      "origin": "JFK",
+      "destination": "LAX",
+      "flightCount": 8
+    }
+  ]
+}
+```
+
+### Error responses
+
+<ResponseField name="401" type="object">
+  Unauthorized - Invalid or missing JWT token
+  
+  ```json
+  {
+    "message": "Unauthorized"
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="500" type="object">
+  Internal server error
+  
+  ```json
+  {
+    "message": "Internal server error"
+  }
+  ```
+</ResponseField>
+
+## Use cases
+
+### Display travel statistics dashboard
+
+Use this endpoint to show users their comprehensive flight history:
+
+```javascript
+const displayStats = async () => {
+  const response = await fetch('https://api.aero.com/v1/profile/@me', {
+    headers: { 'Authorization': 'Bearer YOUR_JWT_TOKEN' }
+  });
+  const stats = await response.json();
+  
+  console.log(`You've flown ${stats.passport.totalFlights} flights`);
+  console.log(`Total distance: ${stats.passport.totalDistanceKm.toLocaleString()} km`);
+  console.log(`Visited ${stats.passport.totalAirports} airports`);
+  console.log(`Most flown aircraft: ${stats.mostFlownAircraft.aircraftName}`);
+};
+```
+
+### Show favorite airlines and airports
+
+```javascript
+const showFavorites = async () => {
+  const response = await fetch('https://api.aero.com/v1/profile/@me', {
+    headers: { 'Authorization': 'Bearer YOUR_JWT_TOKEN' }
+  });
+  const stats = await response.json();
+  
+  // Top 3 airlines
+  const topAirlines = stats.airlines.slice(0, 3);
+  console.log('Your top airlines:');
+  topAirlines.forEach(airline => {
+    console.log(`${airline.airlineName}: ${airline.flightCount} flights`);
+  });
+  
+  // Top 3 airports
+  const topAirports = stats.airports.slice(0, 3);
+  console.log('Your most visited airports:');
+  topAirports.forEach(airport => {
+    console.log(`${airport.airportName}: ${airport.departureCount} departures`);
+  });
+};
+```
+
+### Generate travel report
+
+```javascript
+const generateReport = async () => {
+  const response = await fetch('https://api.aero.com/v1/profile/@me', {
+    headers: { 'Authorization': 'Bearer YOUR_JWT_TOKEN' }
+  });
+  const stats = await response.json();
+  
+  const report = {
+    summary: {
+      flights: stats.passport.totalFlights,
+      distance: `${Math.round(stats.passport.totalDistanceKm).toLocaleString()} km`,
+      timeInAir: `${Math.round(stats.passport.totalDurationMinutes / 60)} hours`,
+      airports: stats.passport.totalAirports,
+      airlines: stats.passport.totalAirlines
+    },
+    records: {
+      longestFlight: stats.longestDistanceFlight,
+      shortestFlight: stats.shortestDistanceFlight,
+      mostFlownRoute: stats.topRoutes[0]
+    },
+    aircraft: {
+      favorite: stats.mostFlownAircraft.aircraftName,
+      youngest: stats.aircraftStats.youngestAircraft,
+      oldest: stats.aircraftStats.oldestAircraft
+    }
+  };
+  
+  return report;
+};
+```

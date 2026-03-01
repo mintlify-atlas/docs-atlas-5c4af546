@@ -1,80 +1,378 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: Quickstart
+description: Get started with Aero and track your first flight in minutes
 ---
 
-## Get started in three steps
+## Prerequisites
 
-Get your documentation site running locally and make your first customization.
+Before you begin, ensure you have the following installed:
 
-### Step 1: Set up your local environment
+- **Node.js** 20+ and **pnpm** 9.15.1+
+- **PostgreSQL** database
+- **Redis** server
+- **Flutter SDK** 3.6.0+ (for mobile development)
+- **Bun** (for scripts and tools)
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
+<Note>
+  You'll also need API keys from FlightAware, AviationStack, and AeroDataBox (via RapidAPI) for flight data.
+</Note>
+
+## Setup the backend API
+
+<Steps>
+  <Step title="Clone and navigate to the API directory">
+    ```bash
+    cd api
+    pnpm install
+    ```
+  </Step>
+
+  <Step title="Configure environment variables">
+    Copy the example environment file and add your configuration:
     
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
+    ```bash
+    cp .env.example .env
+    ```
     
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 2: Deploy your changes
-
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
+    Edit `.env` with your settings:
     
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+    ```bash
+    DATABASE_URL="postgresql://user:password@localhost:5432/aero"
+    JWT_SECRET="your-secret-key-here"
+    AVIATION_STACK_API_KEY="your-aviation-stack-key"
+    RAPID_API_KEY="your-rapid-api-key"
+    FLIGHTAWARE_API_KEY="your-flightaware-key"
+    ```
+    
+    <Warning>
+      Keep your API keys secure and never commit them to version control.
+    </Warning>
+  </Step>
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+  <Step title="Run database migrations">
+    ```bash
+    pnpm run prisma migrate dev
+    ```
+    
+    This sets up the database schema with tables for users, flights, airports, airlines, aircraft, and bookings.
+  </Step>
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+  <Step title="Start the development server">
+    ```bash
+    pnpm run start:dev
+    ```
+    
+    The API will be available at:
+    - API Server: `http://localhost:3000`
+    - API Documentation: `http://localhost:3000/docs`
+    - Scalar API Reference: `http://localhost:3000/reference`
+  </Step>
+</Steps>
 
-### Step 3: Go live
+## Track your first flight
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+Now that your API is running, let's track a flight using the REST endpoints.
+
+<Steps>
+  <Step title="Register a new user">
+    ```bash
+    curl -X POST http://localhost:3000/auth/register \
+      -H "Content-Type: application/json" \
+      -d '{
+        "email": "pilot@example.com",
+        "password": "securepassword",
+        "name": "John Doe"
+      }'
+    ```
+    
+    Response:
+    ```json
+    {
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+      "user": {
+        "id": "clx1234567890",
+        "email": "pilot@example.com",
+        "name": "John Doe"
+      }
+    }
+    ```
+    
+    Save the `token` - you'll need it for authenticated requests.
+  </Step>
+
+  <Step title="Search for a flight">
+    Use the flight search endpoint to find available flights:
+    
+    ```bash
+    curl -X GET "http://localhost:3000/flight/search?iata=UA123&icao=UAL123&timezone=America/New_York" \
+      -H "Authorization: Bearer YOUR_TOKEN_HERE"
+    ```
+    
+    This returns a list of matching flights with their `faFlightId` (FlightAware ID) for detailed tracking.
+  </Step>
+
+  <Step title="Get detailed flight information">
+    Retrieve comprehensive flight details including real-time position:
+    
+    ```bash
+    curl -X GET "http://localhost:3000/flight?iata=UA123&icao=UAL123&timezone=America/New_York&faFlightId=UAL123-1234567890" \
+      -H "Authorization: Bearer YOUR_TOKEN_HERE"
+    ```
+    
+    Response includes:
+    - Real-time position data (latitude, longitude, altitude, speed)
+    - Origin and destination information
+    - Aircraft details and registration
+    - Departure and arrival times (scheduled, estimated, actual)
+    - Gate and terminal information
+    - Flight status and progress percentage
+  </Step>
+
+  <Step title="Get the flight path">
+    Retrieve all position data points for map visualization:
+    
+    ```bash
+    curl -X GET "http://localhost:3000/flight/track?iata=UA123&icao=UAL123&timezone=America/New_York" \
+      -H "Authorization: Bearer YOUR_TOKEN_HERE"
+    ```
+    
+    This returns an array of position coordinates with timestamps for drawing the flight path on a map.
+  </Step>
+</Steps>
+
+## Create a flight booking
+
+Once you've tracked a flight, you can create a booking to save your travel details:
+
+```bash
+curl -X POST http://localhost:3000/flight/booking \
+  -H "Authorization: Bearer YOUR_TOKEN_HERE" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "flightId": "clx1234567890",
+    "bookingCode": "ABC123",
+    "seatNumber": "12A",
+    "seatType": "window",
+    "seatingClass": "economy",
+    "reason": "personal",
+    "notes": "Traveling for vacation"
+  }'
+```
+
+<Note>
+  The `flightId` is returned when you track a flight. Bookings are linked to your user account for easy retrieval.
+</Note>
+
+## Search flights between airports
+
+To find all flights between two airports on a specific date:
+
+```bash
+curl -X GET "http://localhost:3000/flights?from=LAX&to=JFK&date=2024-03-20" \
+  -H "Authorization: Bearer YOUR_TOKEN_HERE"
+```
+
+This returns all available flights with:
+- Flight numbers (IATA and ICAO)
+- Airline information
+- Departure and arrival times
+- Aircraft type
+
+## Using the Flutter mobile app
+
+<Steps>
+  <Step title="Navigate to the app directory">
+    ```bash
+    cd app
+    flutter pub get
+    ```
+  </Step>
+
+  <Step title="Configure API endpoint">
+    Set your API URL in the environment:
+    
+    ```bash
+    # For debug builds
+    flutter run --dart-define=API_URL_DEBUG=http://localhost:3000
+    
+    # For production builds
+    flutter run --dart-define=API_URL_PRODUCTION=https://api.yourdomain.com
+    ```
+  </Step>
+
+  <Step title="Add Mapbox API key">
+    The app uses Mapbox for map visualization:
+    
+    ```bash
+    flutter run --dart-define=MAPBOX_API_KEY=your-mapbox-key
+    ```
+  </Step>
+
+  <Step title="Run the app">
+    ```bash
+    flutter run
+    ```
+    
+    The app includes:
+    - Flight search interface
+    - Interactive map with flight paths
+    - Home screen widgets for quick access
+    - Booking management
+    - User profile and statistics
+  </Step>
+</Steps>
+
+## API code examples
+
+Here are examples using the auto-generated Dart client (from OpenAPI spec):
+
+<CodeGroup>
+```dart Flutter Client
+import 'package:openapi/openapi.dart';
+import 'package:dio/dio.dart';
+
+// Initialize the client
+final openapi = Openapi(
+  dio: Dio(
+    BaseOptions(
+      baseUrl: 'http://localhost:3000',
+    ),
+  ),
+);
+
+// Register a user
+final authResponse = await openapi.getAuthApi().authControllerRegister(
+  registerDTO: RegisterDTO(
+    email: 'pilot@example.com',
+    password: 'securepassword',
+    name: 'John Doe',
+  ),
+);
+
+final token = authResponse.data?.token;
+
+// Search for flights
+final searchResponse = await openapi.getFlightApi().flightControllerSearchFlights(
+  iata: 'UA123',
+  icao: 'UAL123',
+  timezone: 'America/New_York',
+);
+
+// Get flight details
+final flightResponse = await openapi.getFlightApi().flightControllerGetFlight(
+  iata: 'UA123',
+  icao: 'UAL123',
+  timezone: 'America/New_York',
+  faFlightId: 'UAL123-1234567890',
+);
+```
+
+```typescript TypeScript/JavaScript
+import axios from 'axios';
+
+const API_URL = 'http://localhost:3000';
+
+// Register a user
+const { data: authData } = await axios.post(`${API_URL}/auth/register`, {
+  email: 'pilot@example.com',
+  password: 'securepassword',
+  name: 'John Doe',
+});
+
+const token = authData.token;
+
+// Create axios instance with auth
+const api = axios.create({
+  baseURL: API_URL,
+  headers: {
+    Authorization: `Bearer ${token}`,
+  },
+});
+
+// Search for flights
+const { data: searchData } = await api.get('/flight/search', {
+  params: {
+    iata: 'UA123',
+    icao: 'UAL123',
+    timezone: 'America/New_York',
+  },
+});
+
+// Get flight details
+const { data: flightData } = await api.get('/flight', {
+  params: {
+    iata: 'UA123',
+    icao: 'UAL123',
+    timezone: 'America/New_York',
+    faFlightId: 'UAL123-1234567890',
+  },
+});
+```
+
+```python Python
+import requests
+
+API_URL = 'http://localhost:3000'
+
+# Register a user
+auth_response = requests.post(f'{API_URL}/auth/register', json={
+    'email': 'pilot@example.com',
+    'password': 'securepassword',
+    'name': 'John Doe',
+})
+
+token = auth_response.json()['token']
+
+# Create session with auth
+session = requests.Session()
+session.headers.update({'Authorization': f'Bearer {token}'})
+
+# Search for flights
+search_response = session.get(f'{API_URL}/flight/search', params={
+    'iata': 'UA123',
+    'icao': 'UAL123',
+    'timezone': 'America/New_York',
+})
+
+# Get flight details
+flight_response = session.get(f'{API_URL}/flight', params={
+    'iata': 'UA123',
+    'icao': 'UAL123',
+    'timezone': 'America/New_York',
+    'faFlightId': 'UAL123-1234567890',
+})
+```
+</CodeGroup>
 
 ## Next steps
 
-Now that you have your docs running, explore these key features:
-
 <CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
+  <Card
+    title="Architecture overview"
+    icon="diagram-project"
+    href="/architecture"
+  >
+    Learn about the monorepo structure and system design
+  </Card>
+  <Card
+    title="API reference"
+    icon="book"
+    href="/api-reference/introduction"
+  >
+    Explore the complete API documentation
+  </Card>
+  <Card
+    title="Mobile app guide"
+    icon="mobile"
+    href="/guides/mobile"
+  >
+    Deep dive into Flutter app development
+  </Card>
+  <Card
+    title="Wear OS integration"
+    icon="watch"
+    href="/guides/wearos"
+  >
+    Build the Wear OS companion app
+  </Card>
 </CardGroup>
-
-<Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
-</Note>

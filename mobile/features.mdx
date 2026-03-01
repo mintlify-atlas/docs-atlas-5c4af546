@@ -1,0 +1,354 @@
+---
+title: Features
+description: Core features of the Aero mobile app including flight tracking, search, and statistics
+---
+
+The Aero mobile app provides comprehensive flight tracking capabilities with an intuitive interface and powerful features.
+
+## Flight search and tracking
+
+### Search by flight number
+
+Track any commercial flight by its flight number:
+
+<Steps>
+  <Step title="Select airline">
+    Type the airline name or code (e.g., "Emirates", "6E") in the search bar. The app will show matching airlines with logos.
+  </Step>
+  <Step title="Enter flight number">
+    After selecting an airline, enter just the numeric portion of the flight number. For example, for flight 6E1045, enter "1045".
+    
+    <Note>
+    Tip: You only need the numbers. The app automatically adds the airline code.
+    </Note>
+  </Step>
+  <Step title="Select date">
+    Choose the flight date from the date selector. Dates show flights available for tracking.
+  </Step>
+  <Step title="View flight">
+    Tap the flight to load real-time tracking information.
+  </Step>
+</Steps>
+
+The search bar (`lib/screens/home/widgets/flight_search_bar.dart`) supports autocomplete and debounced search for smooth performance.
+
+### Search by route
+
+Find flights between two airports:
+
+1. Search for and select the departure airport
+2. Search for and select the arrival airport  
+3. Choose a date from the date selector
+4. Select a flight from the list of available flights
+
+The app displays all flights matching your route, including:
+- Flight numbers (IATA and ICAO)
+- Airline names with logos
+- Scheduled departure and arrival times
+- Aircraft type when available
+
+### Flight information display
+
+When viewing a flight (`lib/screens/home/widgets/flight_info.dart`), you'll see:
+
+#### Header information
+- Airline logo and name
+- Flight number (both IATA and ICAO identifiers)
+- Aircraft type and registration number
+
+#### Time and status
+- Departure and arrival times in local timezone
+- Scheduled vs. actual/estimated times
+- Delay or early indicators with color coding:
+  - 🟢 Green: Early arrival/departure
+  - 🔴 Red: Delayed (>5 minutes)
+  - ⚫ Gray: On time
+
+#### Airport details
+- Terminal assignments
+- Gate numbers (origin and destination)
+- Baggage claim carousel
+- Runway used for takeoff/landing
+
+#### Flight metrics
+- Total flight distance (km and miles)
+- Flight duration
+- Current altitude (when airborne)
+- Ground speed (when airborne)
+- Heading direction (when airborne)
+
+### Real-time tracking
+
+When a flight is airborne, the app shows:
+
+<CardGroup cols={2}>
+  <Card title="Live position" icon="location-dot">
+    Aircraft marker on the map with rotation based on heading
+  </Card>
+  <Card title="Flight path" icon="route">
+    Complete route from departure to destination with flight track
+  </Card>
+  <Card title="Altitude bar" icon="arrow-up">
+    Current altitude in feet, displayed at the top of the screen
+  </Card>
+  <Card title="Speed indicator" icon="gauge-high">
+    Ground speed in knots, updated every 15 minutes
+  </Card>
+</CardGroup>
+
+The tracking service (`lib/services/widget_update_service.dart`) automatically refreshes data every 15 minutes using `workmanager`.
+
+## Interactive map
+
+The home screen features a full-screen map (`lib/screens/home/widgets/flight_map.dart`) built with `flutter_map`:
+
+### Map features
+
+- **OpenStreetMap tiles**: High-quality map rendering
+- **Animated transitions**: Smooth camera movements when switching flights
+- **Aircraft marker**: Rotates to match heading direction
+- **Flight route**: Polyline showing the great circle path
+- **Flight track**: Historical position data when available
+- **Airport markers**: Icons at departure and arrival airports
+
+### Map controls
+
+The map supports standard gestures:
+- **Pinch**: Zoom in/out
+- **Drag**: Pan the map
+- **Double-tap**: Zoom in
+- **Two-finger tap**: Zoom out
+
+### Auto-centering
+
+When a flight is selected, the map automatically centers on:
+1. The aircraft position (if in flight)
+2. The destination airport (if flight is selected)
+3. A view showing both airports (if viewing route)
+
+## Tracked flights
+
+You can save flights for quick access:
+
+### Adding to tracked flights
+
+1. Search for and view any flight
+2. Flight is automatically tracked when you view it
+3. Access tracked flights from the home screen
+
+Tracked flights appear in a list at the bottom of the home screen when no search is active. Each tracked flight shows:
+- Flight number and airline logo
+- Route (departure → arrival)
+- Status indicator (scheduled, in air, landed, delayed)
+- Quick tap to reload tracking
+
+### Managing tracked flights
+
+Tracked flights are stored locally in SQLite (`sqflite` package) at `lib/screens/home/service.dart`.
+
+## Booking details
+
+Attach personal booking information to any flight:
+
+<Steps>
+  <Step title="Open booking sheet">
+    When viewing a flight, tap the booking icon to open the booking details sheet (`lib/screens/home/widgets/booking_details_sheet.dart`).
+  </Step>
+  <Step title="Enter details">
+    Add your:
+    - Booking reference
+    - Seat number  
+    - Confirmation code
+    - Personal notes
+  </Step>
+  <Step title="Save">
+    Tap "Save" to store booking details with the flight.
+  </Step>
+</Steps>
+
+Booking details are synced to your account and available across devices.
+
+## Shareable flight cards
+
+Create beautiful flight cards to share on social media:
+
+1. View any flight
+2. Tap the share icon
+3. The app generates a custom flight card with:
+   - Airline branding and colors
+   - Route and timing information
+   - Aircraft details
+   - Distance metrics
+   - Status indicators (delayed, cancelled, diverted)
+
+The shareable card (`lib/screens/home/widgets/shareable_flight_card.dart`) is rendered at 450×600px with:
+- Dark gradient background
+- World map overlay
+- Airline logo
+- Flight numbers (IATA and ICAO)
+- Airport codes and city names  
+- Departure/arrival times in local timezone
+- Gate, terminal, and baggage information
+- Flight distance and duration
+- Aircraft model and registration
+
+Share via any app using the `share_plus` package, or save to your photo library using `screenshot`.
+
+## Flight statistics
+
+Track your personal aviation history with comprehensive statistics.
+
+### Access statistics
+
+1. Tap the Profile tab in bottom navigation
+2. Tap "Flight Stats"
+3. View your lifetime aviation metrics
+
+The stats screen (`lib/screens/profile/stats/main.dart`) displays:
+
+### Overview stats
+
+<CardGroup cols={2}>
+  <Card title="Total flights" icon="plane">
+    Number of flights tracked to your account
+  </Card>
+  <Card title="Flight time" icon="clock">
+    Total hours and minutes in the air
+  </Card>
+  <Card title="Distance" icon="road">
+    Total kilometers/miles traveled
+  </Card>
+  <Card title="Airports" icon="map-pin">
+    Unique airports visited
+  </Card>
+  <Card title="Airlines" icon="plane-departure">
+    Different airlines flown
+  </Card>
+</CardGroup>
+
+### Distance comparisons
+
+Your total distance is compared to:
+- **Around Earth**: Trips around the equator (40,075 km)
+- **To the Moon**: Distance to the moon (384,400 km)  
+- **To Mars**: Average distance to Mars (54.6M km)
+
+Each comparison shows a progress bar and multiplier.
+
+### Flight records
+
+- **Shortest flight**: Minimum flight distance and duration
+- **Longest flight**: Maximum flight distance and duration
+
+Each record displays:
+- Route (departure → arrival)
+- Airline and flight number
+- Distance (km) or duration (hours, minutes)
+
+### Aircraft statistics
+
+Detailed aircraft metrics including:
+- **Most flown aircraft**: Aircraft model with most flights
+- **Youngest aircraft**: Newest aircraft by manufacturing date
+- **Oldest aircraft**: Oldest aircraft by age  
+- **Most common tail number**: Registration appearing most often
+- **Median age**: Median aircraft age across all flights
+
+Aircraft stats display photos when available, with fallback to flight icons.
+
+### Top airlines
+
+Ranked list of airlines by flight count:
+- Airline name and logo
+- Flight count
+- Progress bar relative to top airline
+
+Displays top 10 airlines with SVG logo support via `flutter_svg`.
+
+### Top airports
+
+Ranked list of airports by departure count:
+- Airport code (IATA)
+- Airport name
+- City and country  
+- Departure count
+- Progress bar relative to top airport
+
+Displays top 10 airports.
+
+### Top routes
+
+Most frequently flown routes:
+- Departure and arrival airports
+- Flight count on route
+- Distance
+
+All statistics are calculated server-side and cached locally for offline access.
+
+## Wear OS integration
+
+Connect Wear OS smartwatches to sync flight data:
+
+### Connect a device
+
+1. Ensure your Wear OS watch is paired via Bluetooth
+2. In the Aero app, go to Profile → "Connected Wear OS Devices"
+3. Your watch should appear automatically
+4. Status shows:
+   - ✅ Green: Device nearby and connected
+   - ⚠️ Orange: Device paired but not nearby
+
+### View devices
+
+The wearables screen (`lib/screens/wearables/list/main.dart`) shows:
+- Device name
+- Device ID
+- Connection status
+- Nearby indicator
+
+The app uses `WearOSService` (`lib/services/wear_os.dart`) to communicate with watches via Bluetooth.
+
+### Automatic sync
+
+When you view a flight, it automatically syncs to connected Wear OS devices. The watch receives:
+- Flight number and airline
+- Departure and arrival airports
+- Current status
+- Gate and terminal information
+
+## Offline support
+
+The app caches data locally for offline access:
+
+- Recently viewed flights stored in SQLite
+- Airline logos cached via `cached_network_image`  
+- Map tiles cached by `flutter_map`
+- User profile and statistics cached
+
+When offline:
+- View previously loaded flights
+- Access cached statistics
+- View map with cached tiles
+- No real-time updates until reconnected
+
+## Performance features
+
+### Debounced search
+
+Search input uses debouncing to avoid excessive API calls. The search only triggers 300ms after you stop typing.
+
+### Lazy loading
+
+Flight lists use lazy loading to render efficiently:
+- Only visible items are rendered
+- Smooth scrolling with `ListView.builder`
+- Skeleton screens while loading (`skeletonizer` package)
+
+### Image caching
+
+All network images use `cached_network_image` for:
+- Faster loading on repeat views
+- Reduced bandwidth usage
+- Offline access to previously loaded images
+
+See the [Widgets](/mobile/widgets) documentation for home screen widget features.

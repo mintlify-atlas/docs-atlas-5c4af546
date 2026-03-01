@@ -1,0 +1,139 @@
+---
+title: Wear OS companion app
+description: Real-time flight tracking on your smartwatch with the Aero Wear OS companion app
+---
+
+<Warning>
+The Wear OS companion app is currently under development. Features and functionality may change.
+</Warning>
+
+## Introduction
+
+The Aero Wear OS companion app brings real-time flight tracking to your wrist. Built with Jetpack Compose for Wear OS, it provides quick access to your tracked flights directly from your smartwatch.
+
+## Features
+
+### Recently tracked flights
+
+View your recently tracked flights in a scrollable list optimized for round watch faces. Each flight card displays:
+
+- Airline logo with automatic fallback to FlightAware images
+- Departure and arrival airport IATA codes
+- Departure and arrival cities
+- Flight identifiers (IATA, ICAO, or flight number)
+
+### Data synchronization
+
+The Wear OS app receives flight data from the main mobile app through the Wearable Data Layer API. When you track a flight in the mobile app, it automatically syncs to your watch.
+
+Flight data includes:
+- Flight numbers and identifiers
+- Airline information (name, IATA, ICAO codes)
+- Departure and arrival airports
+- Flight dates and times
+
+### Local storage
+
+All flight data is stored locally on your watch using Room database, ensuring you can access your tracked flights even when disconnected from your phone.
+
+### Watch tiles
+
+Aero provides a Wear OS tile for quick access to flight information directly from your watch face. The tile displays a "Hello World!" preview and is built using the Horologist library for optimal performance.
+
+### Complications
+
+Add Aero complications to your watch face for at-a-glance flight information. Currently supports short text complications.
+
+## Technical architecture
+
+### Built with modern Android technologies
+
+The Wear OS app leverages the latest Android and Jetpack libraries:
+
+- **Jetpack Compose for Wear OS** - Modern declarative UI framework
+- **Kotlin** 2.0.21 - Latest Kotlin language features
+- **Room Database** 2.8.4 - Local data persistence
+- **Wearable Data Layer** - Communication with companion phone app
+- **Horologist** - Google's Wear OS toolkit for tiles and composables
+- **Coil** - Asynchronous image loading for airline logos
+- **Coroutines** - Asynchronous programming with Flow
+
+### Minimum requirements
+
+- **Wear OS version**: 3.0 or higher (API level 30+)
+- **Target SDK**: 35
+- **Compile SDK**: 36
+
+### App architecture
+
+The app follows modern Android architecture patterns:
+
+```
+app/
+├── presentation/           # UI layer
+│   ├── screens/
+│   │   └── home/          # Home screen with flight list
+│   ├── theme/             # Material Theme customization
+│   └── MainActivity.kt    # Main entry point
+├── database/              # Data layer
+│   ├── entity/            # Room entities
+│   │   ├── Flight.kt     # Tracked flight data
+│   │   └── Airline.kt    # Airline information
+│   └── dao/              # Data access objects
+├── services/              # Background services
+│   ├── MessageListenerService.kt  # Wearable messaging
+│   └── MessageSenderService.kt    # Send data to phone
+├── tile/                  # Wear OS tiles
+│   └── MainTileService.kt
+└── complication/          # Watch face complications
+    └── MainComplicationService.kt
+```
+
+## App permissions
+
+The Wear OS app requires the following permissions:
+
+- `WAKE_LOCK` - Keep the watch awake during data sync
+- `BIND_WEARABLE_LISTENER` - Receive messages from companion phone app
+- `INTERNET` - Load airline logos and flight data
+
+## Design
+
+### Material Design for Wear OS
+
+The app uses Material Design components specifically designed for Wear OS, including:
+
+- Scaling lazy columns that center content as you scroll
+- Cards optimized for round watch faces
+- Typography sized appropriately for small screens
+- Custom Geist font family via Google Fonts
+
+### Splash screen
+
+The app implements the Wear OS splash screen API with a custom icon for a polished launch experience.
+
+## Data model
+
+The app stores two main entities in the local Room database:
+
+### Tracked flight
+
+- Flight ID (auto-generated)
+- Airline reference
+- Flight number
+- IATA and ICAO identifiers
+- Flight date (epoch seconds)
+- Departure airport IATA code
+- Departure city
+- Arrival airport IATA code
+- Arrival city
+
+### Airline
+
+- Unique ID
+- Airline name
+- ICAO code
+- IATA code
+- Logo image URL
+
+Flights are linked to airlines with foreign key constraints, ensuring data consistency.

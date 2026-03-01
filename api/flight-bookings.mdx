@@ -1,0 +1,547 @@
+---
+title: Flight bookings
+description: Manage flight bookings including seat information and booking details
+---
+
+## Create a flight booking
+
+<CodeGroup>
+```bash cURL
+curl -X POST "https://api.aero.com/v1/flight/booking" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "flightId": "flight_abc123",
+    "bookingCode": "ABC123",
+    "seatNumber": "12A",
+    "seatType": "window",
+    "seatingClass": "economy",
+    "reason": "personal",
+    "notes": "Window seat preferred"
+  }'
+```
+
+```javascript JavaScript
+const response = await fetch('https://api.aero.com/v1/flight/booking', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer YOUR_JWT_TOKEN',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    flightId: 'flight_abc123',
+    bookingCode: 'ABC123',
+    seatNumber: '12A',
+    seatType: 'window',
+    seatingClass: 'economy',
+    reason: 'personal',
+    notes: 'Window seat preferred'
+  })
+});
+const data = await response.json();
+```
+
+```python Python
+import requests
+
+response = requests.post(
+    'https://api.aero.com/v1/flight/booking',
+    json={
+        'flightId': 'flight_abc123',
+        'bookingCode': 'ABC123',
+        'seatNumber': '12A',
+        'seatType': 'window',
+        'seatingClass': 'economy',
+        'reason': 'personal',
+        'notes': 'Window seat preferred'
+    },
+    headers={'Authorization': 'Bearer YOUR_JWT_TOKEN'}
+)
+data = response.json()
+```
+</CodeGroup>
+
+<ParamField path="POST" type="/v1/flight/booking">
+  Create a new booking for a flight with booking details
+</ParamField>
+
+### Request body
+
+<ParamField body="flightId" type="string" required>
+  Flight ID to associate the booking with
+  
+  **Example:** `flight_abc123`
+</ParamField>
+
+<ParamField body="bookingCode" type="string">
+  Booking code/confirmation code (max 50 characters)
+  
+  **Example:** `ABC123`
+</ParamField>
+
+<ParamField body="seatNumber" type="string">
+  Seat number (max 10 characters)
+  
+  **Example:** `12A`
+</ParamField>
+
+<ParamField body="seatType" type="string">
+  Type of seat position
+  
+  Options: `window`, `middle`, `aisle`, `jumpseat`, `captain`, `pilot`, `copilot`, `flight_engineer`, `flight_attendant`, `observer`, `other`
+  
+  **Example:** `window`
+</ParamField>
+
+<ParamField body="seatingClass" type="string">
+  Class of service
+  
+  Options: `economy`, `premium_economy`, `business`, `first`, `private`, `other`
+  
+  **Example:** `economy`
+</ParamField>
+
+<ParamField body="reason" type="string" default="personal">
+  Reason for the flight
+  
+  Options: `personal`, `business`, `crew`, `training`, `repositioning`, `other`
+  
+  **Example:** `personal`
+</ParamField>
+
+<ParamField body="notes" type="string">
+  Additional notes about the booking (max 500 characters)
+  
+  **Example:** `Window seat preferred`
+</ParamField>
+
+### Response
+
+<ResponseField name="id" type="string">
+  Unique booking identifier
+  
+  **Example:** `booking_abc123`
+</ResponseField>
+
+<ResponseField name="bookingCode" type="string">
+  Booking code/confirmation code
+</ResponseField>
+
+<ResponseField name="seatNumber" type="string">
+  Seat number
+</ResponseField>
+
+<ResponseField name="seatType" type="string">
+  Type of seat position
+</ResponseField>
+
+<ResponseField name="seatingClass" type="string">
+  Class of service
+</ResponseField>
+
+<ResponseField name="reason" type="string">
+  Reason for the flight
+</ResponseField>
+
+<ResponseField name="notes" type="string">
+  Additional notes about the booking
+</ResponseField>
+
+<ResponseField name="flightId" type="string">
+  Flight ID associated with this booking
+</ResponseField>
+
+<ResponseField name="userId" type="string">
+  User ID who owns this booking
+</ResponseField>
+
+<ResponseField name="createdAt" type="string">
+  Date and time when the booking was created (ISO 8601)
+  
+  **Example:** `2024-03-20T10:00:00Z`
+</ResponseField>
+
+<ResponseField name="updatedAt" type="string">
+  Date and time when the booking was last updated (ISO 8601)
+  
+  **Example:** `2024-03-20T10:00:00Z`
+</ResponseField>
+
+### Response example
+
+```json
+{
+  "id": "booking_abc123",
+  "bookingCode": "ABC123",
+  "seatNumber": "12A",
+  "seatType": "window",
+  "seatingClass": "economy",
+  "reason": "personal",
+  "notes": "Window seat preferred",
+  "flightId": "flight_abc123",
+  "userId": "user_abc123",
+  "createdAt": "2024-03-20T10:00:00Z",
+  "updatedAt": "2024-03-20T10:00:00Z"
+}
+```
+
+### Error responses
+
+<ResponseField name="400" type="object">
+  Invalid request parameters or flight not found
+  
+  ```json
+  {
+    "message": "Flight not found"
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="401" type="object">
+  User is not authenticated
+  
+  ```json
+  {
+    "message": "Unauthorized"
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="500" type="object">
+  Internal server error
+  
+  ```json
+  {
+    "message": "Internal server error"
+  }
+  ```
+</ResponseField>
+
+## Get a flight booking
+
+<CodeGroup>
+```bash cURL
+curl -X GET "https://api.aero.com/v1/flight/booking/booking_abc123" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+```javascript JavaScript
+const response = await fetch('https://api.aero.com/v1/flight/booking/booking_abc123', {
+  headers: {
+    'Authorization': 'Bearer YOUR_JWT_TOKEN'
+  }
+});
+const data = await response.json();
+```
+
+```python Python
+import requests
+
+response = requests.get(
+    'https://api.aero.com/v1/flight/booking/booking_abc123',
+    headers={'Authorization': 'Bearer YOUR_JWT_TOKEN'}
+)
+data = response.json()
+```
+</CodeGroup>
+
+<ParamField path="GET" type="/v1/flight/booking/{bookingId}">
+  Get details of a specific flight booking
+</ParamField>
+
+### Path parameters
+
+<ParamField path="bookingId" type="string" required>
+  ID of the booking to retrieve
+  
+  **Example:** `booking_abc123`
+</ParamField>
+
+### Response
+
+Returns a booking object with the same structure as the create booking response.
+
+### Error responses
+
+<ResponseField name="401" type="object">
+  User is not authenticated
+</ResponseField>
+
+<ResponseField name="404" type="object">
+  Booking not found
+  
+  ```json
+  {
+    "message": "Booking not found"
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="500" type="object">
+  Internal server error
+</ResponseField>
+
+## Update a flight booking
+
+<CodeGroup>
+```bash cURL
+curl -X PUT "https://api.aero.com/v1/flight/booking/booking_abc123" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "seatNumber": "14B",
+    "seatType": "aisle",
+    "notes": "Changed to aisle seat"
+  }'
+```
+
+```javascript JavaScript
+const response = await fetch('https://api.aero.com/v1/flight/booking/booking_abc123', {
+  method: 'PUT',
+  headers: {
+    'Authorization': 'Bearer YOUR_JWT_TOKEN',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    seatNumber: '14B',
+    seatType: 'aisle',
+    notes: 'Changed to aisle seat'
+  })
+});
+const data = await response.json();
+```
+
+```python Python
+import requests
+
+response = requests.put(
+    'https://api.aero.com/v1/flight/booking/booking_abc123',
+    json={
+        'seatNumber': '14B',
+        'seatType': 'aisle',
+        'notes': 'Changed to aisle seat'
+    },
+    headers={'Authorization': 'Bearer YOUR_JWT_TOKEN'}
+)
+data = response.json()
+```
+</CodeGroup>
+
+<ParamField path="PUT" type="/v1/flight/booking/{bookingId}">
+  Update an existing flight booking
+</ParamField>
+
+### Path parameters
+
+<ParamField path="bookingId" type="string" required>
+  ID of the booking to update
+  
+  **Example:** `booking_abc123`
+</ParamField>
+
+### Request body
+
+All fields are optional. Only include the fields you want to update. Set to `null` to clear a field.
+
+<ParamField body="bookingCode" type="string | null">
+  Booking code/confirmation code (max 50 characters). Set to null to clear.
+</ParamField>
+
+<ParamField body="seatNumber" type="string | null">
+  Seat number (max 10 characters). Set to null to clear.
+</ParamField>
+
+<ParamField body="seatType" type="string | null">
+  Type of seat position. Set to null to clear.
+  
+  Options: `window`, `middle`, `aisle`, `jumpseat`, `captain`, `pilot`, `copilot`, `flight_engineer`, `flight_attendant`, `observer`, `other`
+</ParamField>
+
+<ParamField body="seatingClass" type="string | null">
+  Class of service. Set to null to clear.
+  
+  Options: `economy`, `premium_economy`, `business`, `first`, `private`, `other`
+</ParamField>
+
+<ParamField body="reason" type="string | null">
+  Reason for the flight. Set to null to clear.
+  
+  Options: `personal`, `business`, `crew`, `training`, `repositioning`, `other`
+</ParamField>
+
+<ParamField body="notes" type="string | null">
+  Additional notes about the booking (max 500 characters). Set to null to clear.
+</ParamField>
+
+### Response
+
+Returns the updated booking object.
+
+### Error responses
+
+<ResponseField name="400" type="object">
+  Invalid request parameters
+</ResponseField>
+
+<ResponseField name="401" type="object">
+  User is not authenticated
+</ResponseField>
+
+<ResponseField name="404" type="object">
+  Booking not found
+</ResponseField>
+
+<ResponseField name="500" type="object">
+  Internal server error
+</ResponseField>
+
+## Delete a flight booking
+
+<CodeGroup>
+```bash cURL
+curl -X DELETE "https://api.aero.com/v1/flight/booking/booking_abc123" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+```javascript JavaScript
+const response = await fetch('https://api.aero.com/v1/flight/booking/booking_abc123', {
+  method: 'DELETE',
+  headers: {
+    'Authorization': 'Bearer YOUR_JWT_TOKEN'
+  }
+});
+const data = await response.json();
+```
+
+```python Python
+import requests
+
+response = requests.delete(
+    'https://api.aero.com/v1/flight/booking/booking_abc123',
+    headers={'Authorization': 'Bearer YOUR_JWT_TOKEN'}
+)
+data = response.json()
+```
+</CodeGroup>
+
+<ParamField path="DELETE" type="/v1/flight/booking/{bookingId}">
+  Delete a flight booking
+</ParamField>
+
+### Path parameters
+
+<ParamField path="bookingId" type="string" required>
+  ID of the booking to delete
+  
+  **Example:** `booking_abc123`
+</ParamField>
+
+### Response
+
+```json
+{
+  "message": "Booking deleted successfully"
+}
+```
+
+### Error responses
+
+<ResponseField name="401" type="object">
+  User is not authenticated
+</ResponseField>
+
+<ResponseField name="404" type="object">
+  Booking not found
+</ResponseField>
+
+<ResponseField name="500" type="object">
+  Internal server error
+</ResponseField>
+
+## Get all bookings for a flight
+
+<CodeGroup>
+```bash cURL
+curl -X GET "https://api.aero.com/v1/flight/booking/flight/flight_abc123" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+```javascript JavaScript
+const response = await fetch('https://api.aero.com/v1/flight/booking/flight/flight_abc123', {
+  headers: {
+    'Authorization': 'Bearer YOUR_JWT_TOKEN'
+  }
+});
+const data = await response.json();
+```
+
+```python Python
+import requests
+
+response = requests.get(
+    'https://api.aero.com/v1/flight/booking/flight/flight_abc123',
+    headers={'Authorization': 'Bearer YOUR_JWT_TOKEN'}
+)
+data = response.json()
+```
+</CodeGroup>
+
+<ParamField path="GET" type="/v1/flight/booking/flight/{flightId}">
+  Get all bookings associated with a specific flight
+</ParamField>
+
+### Path parameters
+
+<ParamField path="flightId" type="string" required>
+  ID of the flight
+  
+  **Example:** `flight_abc123`
+</ParamField>
+
+### Response
+
+Returns an array of booking objects.
+
+```json
+[
+  {
+    "id": "booking_abc123",
+    "bookingCode": "ABC123",
+    "seatNumber": "12A",
+    "seatType": "window",
+    "seatingClass": "economy",
+    "reason": "personal",
+    "notes": "Window seat preferred",
+    "flightId": "flight_abc123",
+    "userId": "user_abc123",
+    "createdAt": "2024-03-20T10:00:00Z",
+    "updatedAt": "2024-03-20T10:00:00Z"
+  },
+  {
+    "id": "booking_def456",
+    "bookingCode": "DEF456",
+    "seatNumber": "12B",
+    "seatType": "middle",
+    "seatingClass": "economy",
+    "reason": "personal",
+    "flightId": "flight_abc123",
+    "userId": "user_def456",
+    "createdAt": "2024-03-20T11:00:00Z",
+    "updatedAt": "2024-03-20T11:00:00Z"
+  }
+]
+```
+
+### Error responses
+
+<ResponseField name="400" type="object">
+  Flight not found
+</ResponseField>
+
+<ResponseField name="401" type="object">
+  User is not authenticated
+</ResponseField>
+
+<ResponseField name="500" type="object">
+  Internal server error
+</ResponseField>

@@ -1,0 +1,281 @@
+---
+title: Contributing guidelines
+description: Learn how to contribute to the Aero project, including development setup, code standards, and workflow
+---
+
+## Overview
+
+Aero is an open-source flight tracking platform built with a modern monorepo architecture. We welcome contributions from the community to help improve the platform.
+
+## Prerequisites
+
+Before you begin, ensure you have the following installed:
+
+- **Node.js** 20+ and **pnpm** 9.15.1+
+- **Flutter SDK** 3.6.0+
+- **PostgreSQL** database
+- **Redis** server
+- **Bun** runtime (for scripts and scraper)
+- **Android Studio** (for Wear OS development)
+- **Dart SDK** (for OpenAPI client generation)
+
+## Monorepo structure
+
+The Aero monorepo is organized into the following components:
+
+```
+aero/
+├── api/          # NestJS REST API server
+├── app/          # Flutter mobile app (iOS/Android)
+├── wearos/       # Wear OS companion app
+├── landing/      # React marketing website
+├── backend/      # Legacy PocketBase (deprecated)
+├── scraper/      # Playwright web scraper
+├── scripts/      # Data management utilities
+└── openapi/      # Auto-generated Dart API client
+```
+
+## Getting started
+
+<Steps>
+  <Step title="Clone the repository">
+    Clone the Aero repository to your local machine:
+
+    ```bash
+    git clone https://github.com/yourusername/aero.git
+    cd aero
+    ```
+  </Step>
+
+  <Step title="Set up the API server">
+    The API server is the core backend service:
+
+    ```bash
+    cd api
+    pnpm install
+    cp .env.example .env
+    ```
+
+    Edit `.env` and configure your environment variables:
+
+    ```bash
+    DATABASE_URL=postgresql://user:password@localhost:5432/aero
+    JWT_SECRET=your-secret-key
+    AVIATION_STACK_API_KEY=your-api-key
+    RAPID_API_KEY=your-rapid-api-key
+    FLIGHTAWARE_API_KEY=your-flightaware-key
+    ```
+
+    Run database migrations:
+
+    ```bash
+    pnpm run prisma migrate dev
+    ```
+
+    Start the development server:
+
+    ```bash
+    pnpm run start:dev
+    ```
+
+    The API will be available at:
+    - API Server: `http://localhost:3000`
+    - API Docs: `http://localhost:3000/docs`
+    - Scalar Reference: `http://localhost:3000/reference`
+  </Step>
+
+  <Step title="Set up the mobile app">
+    The Flutter mobile app connects to the API:
+
+    ```bash
+    cd app
+    flutter pub get
+    flutter run
+    ```
+
+    <Note>
+      The native configuration is currently only set up for Android builds.
+    </Note>
+  </Step>
+
+  <Step title="Set up the landing page (optional)">
+    The marketing website is built with React and Vite:
+
+    ```bash
+    cd landing
+    bun install
+    bun run dev
+    ```
+  </Step>
+</Steps>
+
+## Development workflow
+
+### API development
+
+The API server supports hot reload for rapid development:
+
+<CodeGroup>
+```bash Development server
+cd api
+pnpm run start:dev
+```
+
+```bash Production build
+cd api
+pnpm run build
+pnpm run start:prod
+```
+
+```bash Lint code
+cd api
+pnpm run lint
+```
+
+```bash Format code
+cd api
+pnpm run format
+```
+</CodeGroup>
+
+### Flutter development
+
+<CodeGroup>
+```bash Run on device
+cd app
+flutter run
+```
+
+```bash Build APK
+cd app
+flutter build apk
+```
+
+```bash Run tests
+cd app
+flutter test
+```
+
+```bash Analyze code
+cd app
+flutter analyze
+```
+</CodeGroup>
+
+<Tip>
+  The Flutter app uses the auto-generated OpenAPI client. After making API changes, regenerate the client using the script described in the [API client generation](/development/api-client) guide.
+</Tip>
+
+### Database management
+
+The API uses Prisma ORM for database management:
+
+<CodeGroup>
+```bash Create migration
+cd api
+pnpm run prisma migrate dev --name your_migration_name
+```
+
+```bash Apply migrations
+cd api
+pnpm run prisma migrate deploy
+```
+
+```bash Open Prisma Studio
+cd api
+pnpm run prisma studio
+```
+
+```bash Generate Prisma Client
+cd api
+pnpm run prisma generate
+```
+</CodeGroup>
+
+## Code standards
+
+### TypeScript/NestJS (API)
+
+- Use TypeScript strict mode
+- Follow NestJS module structure
+- Use dependency injection
+- Document all endpoints with Swagger decorators
+- Write unit tests for services
+- Use Prettier for formatting (configured in `.prettierrc`)
+- Use ESLint for linting (configured in `.eslintrc.js`)
+
+### Dart/Flutter (Mobile App)
+
+- Follow Dart style guide
+- Use Flutter best practices
+- Implement proper state management
+- Write widget tests for critical components
+- Use meaningful variable and function names
+- Document complex logic
+
+### Git workflow
+
+1. Create a feature branch from `main`:
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
+
+2. Make your changes and commit with clear messages:
+   ```bash
+   git add .
+   git commit -m "Add feature: description of your changes"
+   ```
+
+3. Push your branch and create a pull request:
+   ```bash
+   git push origin feature/your-feature-name
+   ```
+
+4. Ensure all tests pass and address review comments
+
+## Testing
+
+### API tests
+
+```bash
+cd api
+pnpm run test          # Run unit tests
+pnpm run test:watch    # Run tests in watch mode
+pnpm run test:cov      # Generate coverage report
+pnpm run test:e2e      # Run end-to-end tests
+```
+
+### Flutter tests
+
+```bash
+cd app
+flutter test           # Run all tests
+flutter test --coverage # Generate coverage report
+```
+
+## API keys and external services
+
+Aero integrates with several external services:
+
+- **Aviation Stack API** - Flight search between airports
+- **RapidAPI (AeroDataBox)** - Comprehensive flight data
+- **FlightAware API** - Real-time flight tracking
+
+<Note>
+  You'll need to subscribe to these services and obtain API keys for full functionality.
+</Note>
+
+## Additional resources
+
+- [OpenAPI Client Generation](/development/api-client) - Regenerate the Dart API client
+- [Web Scraper](/development/scraper) - Scrape airline data
+- [Data Management Scripts](/development/scripts) - Import and migrate data
+
+## Getting help
+
+If you encounter issues or have questions:
+
+1. Check existing GitHub issues
+2. Review the API documentation at `http://localhost:3000/docs`
+3. Create a new issue with detailed information
+4. Join the community discussions

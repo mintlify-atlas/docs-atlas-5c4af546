@@ -1,0 +1,284 @@
+---
+title: Installation and setup
+description: Set up the Aero Wear OS companion app for development and testing
+---
+
+<Warning>
+The Wear OS companion app is currently under development. These instructions are for developers who want to build and test the app.
+</Warning>
+
+## Prerequisites
+
+Before setting up the Wear OS app, ensure you have the following installed:
+
+- **Android Studio** - Latest stable version (Ladybug or newer recommended)
+- **Java Development Kit (JDK)** - Version 11 or higher
+- A Wear OS device or emulator running Wear OS 3.0+ (API level 30+)
+
+## Setup instructions
+
+<Steps>
+  <Step title="Clone the repository">
+    Clone the Aero monorepo and navigate to the Wear OS directory:
+
+    ```bash
+    git clone https://github.com/your-org/aero.git
+    cd aero/wearos
+    ```
+  </Step>
+
+  <Step title="Open in Android Studio">
+    Launch Android Studio and open the `wearos` directory as a project.
+
+    Android Studio will automatically:
+    - Sync Gradle dependencies
+    - Download required Android SDK components
+    - Set up the build configuration
+  </Step>
+
+  <Step title="Configure the Wear OS emulator">
+    If you don't have a physical Wear OS device:
+
+    1. Open **Tools > Device Manager** in Android Studio
+    2. Click **Create Device**
+    3. Select **Wear OS** category
+    4. Choose a device definition (e.g., "Wear OS Small Round" or "Wear OS Large Round")
+    5. Select a system image with API level 30 or higher
+    6. Click **Finish** to create the emulator
+
+    <Info>
+    For the best development experience, use the "Wear OS Large Round" device profile with the latest system image.
+    </Info>
+  </Step>
+
+  <Step title="Build and run">
+    Build and install the app on your Wear OS device or emulator:
+
+    ```bash
+    ./gradlew installDebug
+    ```
+
+    Or use the **Run** button in Android Studio.
+
+    The app will launch automatically after installation.
+  </Step>
+</Steps>
+
+## Project structure
+
+The Wear OS app uses Gradle with Kotlin DSL for build configuration:
+
+- `build.gradle.kts` - Root project configuration
+- `app/build.gradle.kts` - App module configuration
+- `gradle/libs.versions.toml` - Centralized dependency version management
+- `settings.gradle.kts` - Project settings
+
+## Dependencies
+
+The app uses version catalogs for dependency management. Key dependencies are defined in `gradle/libs.versions.toml`:
+
+### Core dependencies
+
+- Android Gradle Plugin: 8.10.1
+- Kotlin: 2.0.21
+- Compose BOM: 2024.09.00
+
+### Jetpack libraries
+
+- Wear Compose Material: 1.2.1
+- Wear Compose Foundation: 1.2.1
+- Activity Compose: 1.8.0
+- Lifecycle ViewModel Compose: 2.9.4
+- Navigation Compose for Wear: 1.5.5
+- Room Runtime: 2.8.4
+- Core Splashscreen: 1.0.1
+
+### Wear OS specific
+
+- Play Services Wearable: 19.0.0
+- Tiles: 1.4.0
+- Tiles Material: 1.4.0
+- Horologist Compose Tools: 0.6.17
+- Horologist Tiles: 0.6.17
+- Watchface Complications: 1.2.1
+
+### Image loading
+
+- Coil Compose: 3.1.0
+- Coil Network OkHttp: 3.1.0
+
+### Coroutines
+
+- Kotlinx Coroutines Android: 1.10.2
+- Kotlinx Coroutines Play Services: 1.10.2
+
+## Build configuration
+
+The app is configured with the following build settings:
+
+- **Application ID**: `fyi.procrastinator.aero`
+- **Minimum SDK**: 30 (Wear OS 3.0)
+- **Target SDK**: 35
+- **Compile SDK**: 36
+- **Version Code**: 1
+- **Version Name**: 1.0
+
+### Compilation options
+
+```kotlin
+compileOptions {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+}
+
+kotlinOptions {
+    jvmTarget = "11"
+}
+```
+
+## Development tools
+
+### KSP (Kotlin Symbol Processing)
+
+The project uses KSP version 2.0.21-1.0.27 for annotation processing, specifically for Room database code generation.
+
+KSP is configured in the root `build.gradle.kts` and applied in the app module for Room compiler.
+
+### Compose preview
+
+The app includes Compose preview support for both screens and tiles:
+
+- Use `@Preview` annotations to preview composables in Android Studio
+- Tile previews use `@Preview` with device configurations for different watch sizes
+- Preview configurations available for small round and large round devices
+
+## Testing on physical device
+
+<Steps>
+  <Step title="Enable developer options">
+    On your Wear OS watch:
+
+    1. Go to **Settings > System > About**
+    2. Tap **Build number** 7 times
+    3. Developer options will be enabled
+  </Step>
+
+  <Step title="Enable ADB debugging">
+    1. Go to **Settings > Developer options**
+    2. Enable **ADB debugging**
+    3. Enable **Debug over Wi-Fi** (optional, for wireless debugging)
+  </Step>
+
+  <Step title="Connect via ADB">
+    Connect your watch to your computer:
+
+    **Via USB** (using companion phone):
+    ```bash
+    adb devices
+    ```
+
+    **Via Wi-Fi**:
+    ```bash
+    adb connect <watch-ip-address>:5555
+    ```
+
+    <Note>
+    Find your watch's IP address in **Settings > Developer options > Wi-Fi debugging**.
+    </Note>
+  </Step>
+
+  <Step title="Install and run">
+    Once connected, build and install the app:
+
+    ```bash
+    ./gradlew installDebug
+    ```
+
+    Or select your watch from the device dropdown in Android Studio and click **Run**.
+  </Step>
+</Steps>
+
+## Connecting to the mobile app
+
+The Wear OS app receives flight data from the main Aero mobile app via the Wearable Data Layer API.
+
+<Info>
+You'll need to have the main Aero Flutter mobile app installed on a paired phone for full functionality. The Wear OS app can run standalone but won't receive flight updates without the companion app.
+</Info>
+
+### Message paths
+
+The app listens for messages on these paths:
+
+- `/boot` - Launches the app when triggered by the phone
+- `/register-flight` - Receives new flight tracking data
+
+### Data format
+
+Flight data is sent as JSON with the following structure:
+
+```json
+{
+  "airline": {
+    "iata": "AI",
+    "icao": "AIC",
+    "name": "Air India",
+    "image": "https://..."
+  },
+  "flight": {
+    "flightNo": "AI129",
+    "identIata": "AI129",
+    "identIcao": "AIC129",
+    "date": "2026-03-15T10:30:00Z",
+    "departureAirportIata": "DEL",
+    "departureCity": "Delhi",
+    "arrivalAirportIata": "BLR",
+    "arrivalCity": "Bangalore"
+  }
+}
+```
+
+## Troubleshooting
+
+### Gradle sync fails
+
+If Gradle sync fails:
+
+1. Check that you have JDK 11 or higher installed
+2. Ensure Android SDK is properly configured
+3. Try **File > Invalidate Caches / Restart**
+4. Delete `.gradle` and `.idea` directories and re-sync
+
+### App crashes on launch
+
+Common issues:
+
+- Ensure your device/emulator is running API level 30 or higher
+- Check logcat for specific error messages
+- Verify all dependencies downloaded correctly
+
+### Images not loading
+
+Airline logo images require internet access:
+
+- Ensure the emulator/device has network connectivity
+- Check that `INTERNET` permission is granted
+- Images fall back to FlightAware URLs if the primary image fails
+
+### Data not syncing from phone
+
+If flight data doesn't appear:
+
+1. Ensure the phone and watch are paired properly
+2. Check that both apps are installed and running
+3. Verify Google Play Services is up to date on both devices
+4. Check logcat for message listener errors
+
+## Next steps
+
+Once you have the app running:
+
+- Explore the home screen composables in `app/src/main/java/fyi/procrastinator/aero/presentation/screens/home/`
+- Check the database schema in `app/src/main/java/fyi/procrastinator/aero/database/entity/`
+- Customize the tile in `app/src/main/java/fyi/procrastinator/aero/tile/MainTileService.kt`
+- Modify the complication in `app/src/main/java/fyi/procrastinator/aero/complication/MainComplicationService.kt`
