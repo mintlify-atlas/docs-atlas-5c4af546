@@ -7,12 +7,12 @@ description: Search for flights between two airports on a specific date
 
 <CodeGroup>
 ```bash cURL
-curl -X GET "https://api.aero.com/v1/flights?from=LAX&to=JFK&date=2024-03-20" \
+curl -X GET "http://localhost:3000/v1/flights?from=LAX&to=JFK&date=2024-03-20" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
 ```javascript JavaScript
-const response = await fetch('https://api.aero.com/v1/flights?from=LAX&to=JFK&date=2024-03-20', {
+const response = await fetch('http://localhost:3000/v1/flights?from=LAX&to=JFK&date=2024-03-20', {
   headers: {
     'Authorization': 'Bearer YOUR_JWT_TOKEN'
   }
@@ -24,7 +24,7 @@ const data = await response.json();
 import requests
 
 response = requests.get(
-    'https://api.aero.com/v1/flights',
+    'http://localhost:3000/v1/flights',
     params={'from': 'LAX', 'to': 'JFK', 'date': '2024-03-20'},
     headers={'Authorization': 'Bearer YOUR_JWT_TOKEN'}
 )
@@ -249,14 +249,14 @@ data = response.json()
 
 <CodeGroup>
 ```bash cURL
-curl -X POST "https://api.aero.com/v1/flights/airline" \
+curl -X POST "http://localhost:3000/v1/flights/airline" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"search": "6E9920"}'
 ```
 
 ```javascript JavaScript
-const response = await fetch('https://api.aero.com/v1/flights/airline', {
+const response = await fetch('http://localhost:3000/v1/flights/airline', {
   method: 'POST',
   headers: {
     'Authorization': 'Bearer YOUR_JWT_TOKEN',
@@ -271,7 +271,7 @@ const data = await response.json();
 import requests
 
 response = requests.post(
-    'https://api.aero.com/v1/flights/airline',
+    'http://localhost:3000/v1/flights/airline',
     json={'search': '6E9920'},
     headers={'Authorization': 'Bearer YOUR_JWT_TOKEN'}
 )
@@ -351,12 +351,12 @@ data = response.json()
 
 <CodeGroup>
 ```bash cURL
-curl -X GET "https://api.aero.com/v1/flights/tracked" \
+curl -X GET "http://localhost:3000/v1/flights/tracked" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
 ```javascript JavaScript
-const response = await fetch('https://api.aero.com/v1/flights/tracked', {
+const response = await fetch('http://localhost:3000/v1/flights/tracked', {
   headers: {
     'Authorization': 'Bearer YOUR_JWT_TOKEN'
   }
@@ -368,7 +368,7 @@ const data = await response.json();
 import requests
 
 response = requests.get(
-    'https://api.aero.com/v1/flights/tracked',
+    'http://localhost:3000/v1/flights/tracked',
     headers={'Authorization': 'Bearer YOUR_JWT_TOKEN'}
 )
 data = response.json()

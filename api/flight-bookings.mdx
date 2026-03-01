@@ -7,7 +7,7 @@ description: Manage flight bookings including seat information and booking detai
 
 <CodeGroup>
 ```bash cURL
-curl -X POST "https://api.aero.com/v1/flight/booking" \
+curl -X POST "http://localhost:3000/v1/flight/booking" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -22,7 +22,7 @@ curl -X POST "https://api.aero.com/v1/flight/booking" \
 ```
 
 ```javascript JavaScript
-const response = await fetch('https://api.aero.com/v1/flight/booking', {
+const response = await fetch('http://localhost:3000/v1/flight/booking', {
   method: 'POST',
   headers: {
     'Authorization': 'Bearer YOUR_JWT_TOKEN',
@@ -45,7 +45,7 @@ const data = await response.json();
 import requests
 
 response = requests.post(
-    'https://api.aero.com/v1/flight/booking',
+    'http://localhost:3000/v1/flight/booking',
     json={
         'flightId': 'flight_abc123',
         'bookingCode': 'ABC123',
@@ -221,12 +221,12 @@ data = response.json()
 
 <CodeGroup>
 ```bash cURL
-curl -X GET "https://api.aero.com/v1/flight/booking/booking_abc123" \
+curl -X GET "http://localhost:3000/v1/flight/booking/booking_abc123" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
 ```javascript JavaScript
-const response = await fetch('https://api.aero.com/v1/flight/booking/booking_abc123', {
+const response = await fetch('http://localhost:3000/v1/flight/booking/booking_abc123', {
   headers: {
     'Authorization': 'Bearer YOUR_JWT_TOKEN'
   }
@@ -238,7 +238,7 @@ const data = await response.json();
 import requests
 
 response = requests.get(
-    'https://api.aero.com/v1/flight/booking/booking_abc123',
+    'http://localhost:3000/v1/flight/booking/booking_abc123',
     headers={'Authorization': 'Bearer YOUR_JWT_TOKEN'}
 )
 data = response.json()
@@ -285,7 +285,7 @@ Returns a booking object with the same structure as the create booking response.
 
 <CodeGroup>
 ```bash cURL
-curl -X PUT "https://api.aero.com/v1/flight/booking/booking_abc123" \
+curl -X PUT "http://localhost:3000/v1/flight/booking/booking_abc123" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -296,7 +296,7 @@ curl -X PUT "https://api.aero.com/v1/flight/booking/booking_abc123" \
 ```
 
 ```javascript JavaScript
-const response = await fetch('https://api.aero.com/v1/flight/booking/booking_abc123', {
+const response = await fetch('http://localhost:3000/v1/flight/booking/booking_abc123', {
   method: 'PUT',
   headers: {
     'Authorization': 'Bearer YOUR_JWT_TOKEN',
@@ -315,7 +315,7 @@ const data = await response.json();
 import requests
 
 response = requests.put(
-    'https://api.aero.com/v1/flight/booking/booking_abc123',
+    'http://localhost:3000/v1/flight/booking/booking_abc123',
     json={
         'seatNumber': '14B',
         'seatType': 'aisle',
@@ -399,12 +399,12 @@ Returns the updated booking object.
 
 <CodeGroup>
 ```bash cURL
-curl -X DELETE "https://api.aero.com/v1/flight/booking/booking_abc123" \
+curl -X DELETE "http://localhost:3000/v1/flight/booking/booking_abc123" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
 ```javascript JavaScript
-const response = await fetch('https://api.aero.com/v1/flight/booking/booking_abc123', {
+const response = await fetch('http://localhost:3000/v1/flight/booking/booking_abc123', {
   method: 'DELETE',
   headers: {
     'Authorization': 'Bearer YOUR_JWT_TOKEN'
@@ -417,7 +417,7 @@ const data = await response.json();
 import requests
 
 response = requests.delete(
-    'https://api.aero.com/v1/flight/booking/booking_abc123',
+    'http://localhost:3000/v1/flight/booking/booking_abc123',
     headers={'Authorization': 'Bearer YOUR_JWT_TOKEN'}
 )
 data = response.json()
@@ -462,12 +462,12 @@ data = response.json()
 
 <CodeGroup>
 ```bash cURL
-curl -X GET "https://api.aero.com/v1/flight/booking/flight/flight_abc123" \
+curl -X GET "http://localhost:3000/v1/flight/booking/flight/flight_abc123" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
 ```javascript JavaScript
-const response = await fetch('https://api.aero.com/v1/flight/booking/flight/flight_abc123', {
+const response = await fetch('http://localhost:3000/v1/flight/booking/flight/flight_abc123', {
   headers: {
     'Authorization': 'Bearer YOUR_JWT_TOKEN'
   }
@@ -479,7 +479,7 @@ const data = await response.json();
 import requests
 
 response = requests.get(
-    'https://api.aero.com/v1/flight/booking/flight/flight_abc123',
+    'http://localhost:3000/v1/flight/booking/flight/flight_abc123',
     headers={'Authorization': 'Bearer YOUR_JWT_TOKEN'}
 )
 data = response.json()

@@ -7,12 +7,12 @@ description: Track flights and get real-time position data
 
 <CodeGroup>
 ```bash cURL
-curl -X GET "https://api.aero.com/v1/flight/search?iata=UA123&icao=UAL123&date=2024-03-20&timezone=America/Los_Angeles" \
+curl -X GET "http://localhost:3000/v1/flight/search?iata=UA123&icao=UAL123&date=2024-03-20&timezone=America/Los_Angeles" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
 ```javascript JavaScript
-const response = await fetch('https://api.aero.com/v1/flight/search?iata=UA123&icao=UAL123&date=2024-03-20&timezone=America/Los_Angeles', {
+const response = await fetch('http://localhost:3000/v1/flight/search?iata=UA123&icao=UAL123&date=2024-03-20&timezone=America/Los_Angeles', {
   headers: {
     'Authorization': 'Bearer YOUR_JWT_TOKEN'
   }
@@ -24,7 +24,7 @@ const data = await response.json();
 import requests
 
 response = requests.get(
-    'https://api.aero.com/v1/flight/search',
+    'http://localhost:3000/v1/flight/search',
     params={
         'iata': 'UA123',
         'icao': 'UAL123',
@@ -192,12 +192,12 @@ data = response.json()
 
 <CodeGroup>
 ```bash cURL
-curl -X GET "https://api.aero.com/v1/flight?iata=UA123&icao=UAL123&timezone=America/Los_Angeles&faFlightId=UAL123-1710936000-airline-0123" \
+curl -X GET "http://localhost:3000/v1/flight?iata=UA123&icao=UAL123&timezone=America/Los_Angeles&faFlightId=UAL123-1710936000-airline-0123" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
 ```javascript JavaScript
-const response = await fetch('https://api.aero.com/v1/flight?iata=UA123&icao=UAL123&timezone=America/Los_Angeles&faFlightId=UAL123-1710936000-airline-0123', {
+const response = await fetch('http://localhost:3000/v1/flight?iata=UA123&icao=UAL123&timezone=America/Los_Angeles&faFlightId=UAL123-1710936000-airline-0123', {
   headers: {
     'Authorization': 'Bearer YOUR_JWT_TOKEN'
   }
@@ -209,7 +209,7 @@ const data = await response.json();
 import requests
 
 response = requests.get(
-    'https://api.aero.com/v1/flight',
+    'http://localhost:3000/v1/flight',
     params={
         'iata': 'UA123',
         'icao': 'UAL123',
@@ -428,12 +428,12 @@ data = response.json()
 
 <CodeGroup>
 ```bash cURL
-curl -X GET "https://api.aero.com/v1/flight/track?iata=UA123&icao=UAL123&date=2024-03-20&timezone=America/Los_Angeles" \
+curl -X GET "http://localhost:3000/v1/flight/track?iata=UA123&icao=UAL123&date=2024-03-20&timezone=America/Los_Angeles" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
 ```javascript JavaScript
-const response = await fetch('https://api.aero.com/v1/flight/track?iata=UA123&icao=UAL123&date=2024-03-20&timezone=America/Los_Angeles', {
+const response = await fetch('http://localhost:3000/v1/flight/track?iata=UA123&icao=UAL123&date=2024-03-20&timezone=America/Los_Angeles', {
   headers: {
     'Authorization': 'Bearer YOUR_JWT_TOKEN'
   }
@@ -445,7 +445,7 @@ const data = await response.json();
 import requests
 
 response = requests.get(
-    'https://api.aero.com/v1/flight/track',
+    'http://localhost:3000/v1/flight/track',
     params={
         'iata': 'UA123',
         'icao': 'UAL123',

@@ -26,7 +26,7 @@ While dedicated alert endpoints are not available, you can implement similar fun
 // Poll flight status every 5 minutes
 const checkFlightStatus = async (iata, icao, timezone) => {
   const response = await fetch(
-    `https://api.aero.com/v1/flight?iata=${iata}&icao=${icao}&timezone=${timezone}&forceUpdate=true`,
+    `http://localhost:3000/v1/flight?iata=${iata}&icao=${icao}&timezone=${timezone}&forceUpdate=true`,
     {
       headers: { 'Authorization': 'Bearer YOUR_JWT_TOKEN' }
     }
@@ -58,7 +58,7 @@ const trackFlightPosition = async (iata, icao, timezone) => {
   
   const checkPosition = async () => {
     const response = await fetch(
-      `https://api.aero.com/v1/flight/track?iata=${iata}&icao=${icao}&timezone=${timezone}`,
+      `http://localhost:3000/v1/flight/track?iata=${iata}&icao=${icao}&timezone=${timezone}`,
       {
         headers: { 'Authorization': 'Bearer YOUR_JWT_TOKEN' }
       }
@@ -92,7 +92,7 @@ const trackFlightPosition = async (iata, icao, timezone) => {
 ```javascript
 const monitorTrackedFlights = async () => {
   const response = await fetch(
-    'https://api.aero.com/v1/flights/tracked',
+    'http://localhost:3000/v1/flights/tracked',
     {
       headers: { 'Authorization': 'Bearer YOUR_JWT_TOKEN' }
     }
@@ -146,7 +146,7 @@ class FlightAlertSystem {
     const monitor = setInterval(async () => {
       try {
         const response = await fetch(
-          `https://api.aero.com/v1/flight?iata=${iata}&icao=${icao}&timezone=${timezone}&forceUpdate=true`,
+          `http://localhost:3000/v1/flight?iata=${iata}&icao=${icao}&timezone=${timezone}&forceUpdate=true`,
           {
             headers: { 'Authorization': `Bearer ${this.authToken}` }
           }

@@ -7,12 +7,12 @@ description: Search and retrieve airport information
 
 <CodeGroup>
 ```bash cURL
-curl -X GET "https://api.aero.com/v1/airports?search=VIDP" \
+curl -X GET "http://localhost:3000/v1/airports?search=VIDP" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
 ```javascript JavaScript
-const response = await fetch('https://api.aero.com/v1/airports?search=VIDP', {
+const response = await fetch('http://localhost:3000/v1/airports?search=VIDP', {
   headers: {
     'Authorization': 'Bearer YOUR_JWT_TOKEN'
   }
@@ -24,7 +24,7 @@ const data = await response.json();
 import requests
 
 response = requests.get(
-    'https://api.aero.com/v1/airports',
+    'http://localhost:3000/v1/airports',
     params={'search': 'VIDP'},
     headers={'Authorization': 'Bearer YOUR_JWT_TOKEN'}
 )
@@ -164,7 +164,7 @@ Returns an array of airport objects.
 ### Search by IATA code
 
 ```bash
-curl -X GET "https://api.aero.com/v1/airports?search=LAX" \
+curl -X GET "http://localhost:3000/v1/airports?search=LAX" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
@@ -173,7 +173,7 @@ Returns Los Angeles International Airport.
 ### Search by ICAO code
 
 ```bash
-curl -X GET "https://api.aero.com/v1/airports?search=KLAX" \
+curl -X GET "http://localhost:3000/v1/airports?search=KLAX" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
@@ -182,7 +182,7 @@ Returns Los Angeles International Airport.
 ### Search by name
 
 ```bash
-curl -X GET "https://api.aero.com/v1/airports?search=Heathrow" \
+curl -X GET "http://localhost:3000/v1/airports?search=Heathrow" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
@@ -191,7 +191,7 @@ Returns London Heathrow Airport and other airports with "Heathrow" in the name.
 ### Search by city
 
 ```bash
-curl -X GET "https://api.aero.com/v1/airports?search=Tokyo" \
+curl -X GET "http://localhost:3000/v1/airports?search=Tokyo" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
