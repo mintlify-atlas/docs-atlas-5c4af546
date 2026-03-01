@@ -1,0 +1,115 @@
+{
+  "projectType": "saas",
+  "projectName": "Aero",
+  "projectDescription": "Real-time flight tracking platform with mobile apps, web interface, and Wear OS companion",
+  "theme": "palm",
+  "primaryColor": "#02569B",
+  "lightColor": "#61DAFB",
+  "darkColor": "#0D47A1",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Getting Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "architecture"
+            ]
+          },
+          {
+            "group": "Mobile App",
+            "pages": [
+              "mobile/overview",
+              "mobile/installation",
+              "mobile/features",
+              "mobile/widgets",
+              "mobile/customization"
+            ]
+          },
+          {
+            "group": "Wear OS",
+            "pages": [
+              "wearos/overview",
+              "wearos/installation"
+            ]
+          },
+          {
+            "group": "Backend",
+            "pages": [
+              "backend/setup",
+              "backend/configuration",
+              "backend/database",
+              "backend/authentication"
+            ]
+          },
+          {
+            "group": "Development",
+            "pages": [
+              "development/contributing",
+              "development/api-client",
+              "development/scraper",
+              "development/scripts"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "api/introduction",
+              "api/authentication"
+            ]
+          },
+          {
+            "group": "Endpoints",
+            "pages": [
+              "api/flights",
+              "api/flight-tracking",
+              "api/flight-bookings",
+              "api/airports",
+              "api/airlines",
+              "api/profile",
+              "api/alerts"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Real-time flight tracking with live position updates",
+    "Flight search and booking management",
+    "Airport and airline database with search",
+    "User authentication with JWT",
+    "Home screen widgets for quick access",
+    "Wear OS companion app",
+    "Interactive flight path visualization",
+    "Personal flight statistics and analytics",
+    "Shareable flight cards",
+    "Dynamic app icon customization"
+  ],
+  "publicApiSurface": [
+    "POST /v1/auth/login - User authentication",
+    "POST /v1/auth/register - User registration",
+    "GET /v1/auth/@me - Get current user",
+    "GET /v1/flight/track - Get flight path data",
+    "GET /v1/flight/search - Search for flights",
+    "GET /v1/flight/:id - Get flight details",
+    "POST /v1/flight/booking - Create flight booking",
+    "GET /v1/flight/bookings - Get user bookings",
+    "PUT /v1/flight/booking/:id - Update booking",
+    "DELETE /v1/flight/booking/:id - Delete booking",
+    "GET /v1/airports - Search airports",
+    "GET /v1/airports/:id - Get airport details",
+    "GET /v1/airlines - Search airlines",
+    "GET /v1/airlines/:id - Get airline details",
+    "GET /v1/profile/statistics - Get flight statistics",
+    "GET /v1/alerts - Get flight alerts"
+  ]
+}
